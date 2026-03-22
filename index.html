@@ -647,6 +647,7 @@ body{position:relative;overflow-x:hidden}
     currentView = view;
     homeView.style.display = view === 'home' ? '' : 'none';
     settingsView.style.display = view === 'settings' ? 'block' : 'none';
+    document.querySelector('.hotbar-wrap').style.display = view === 'settings' ? 'none' : '';
     document.querySelectorAll('.hotbar-btn').forEach(b => b.classList.remove('active'));
     if (view === 'home') $('nav-home').classList.add('active');
     if (view === 'settings') populateSettings();
