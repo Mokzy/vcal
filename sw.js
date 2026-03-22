@@ -1,4 +1,4 @@
-const CACHE_NAME = 'vcal-v1';
+const CACHE_NAME = 'vcal-v2';
 const ASSETS = ['./', 'index.html', 'manifest.json'];
 
 self.addEventListener('install', e => {
@@ -12,7 +12,7 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
-  if (e.request.url.includes('fonts.googleapis.com') || e.request.url.includes('fonts.gstatic.com') || e.request.url.includes('unsplash.com')) {
+  if (e.request.url.includes('fonts.googleapis.com') || e.request.url.includes('fonts.gstatic.com') || e.request.url.includes('unsplash.com') || e.request.url.includes('api.openai.com') || e.request.url.includes('api.anthropic.com')) {
     return;
   }
   e.respondWith(

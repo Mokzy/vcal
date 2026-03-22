@@ -272,6 +272,107 @@ body{position:relative;overflow-x:hidden}
 }
 .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
 .toast-icon{width:20px;height:20px;color:#10b981}
+
+/* ── Settings View ── */
+.settings-view{display:none;padding:48px 24px 32px}
+.settings-title{font-size:30px;font-weight:700;letter-spacing:-0.02em;color:#0f172a;margin-bottom:24px}
+.settings-card{
+  background:rgba(255,255,255,0.6);
+  backdrop-filter:blur(40px) saturate(1.8);
+  -webkit-backdrop-filter:blur(40px) saturate(1.8);
+  border:1px solid rgba(255,255,255,0.5);
+  border-radius:24px;
+  padding:24px;
+  box-shadow:0 8px 30px rgba(0,0,0,0.04);
+  margin-bottom:16px;
+}
+.settings-card-title{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:#64748b;margin-bottom:16px}
+.settings-group{margin-bottom:16px}
+.settings-group:last-child{margin-bottom:0}
+.settings-label{display:block;font-size:13px;font-weight:500;color:#475569;margin-bottom:6px}
+.settings-input{
+  width:100%;padding:12px 14px;
+  background:rgba(255,255,255,0.7);
+  border:1px solid rgba(255,255,255,0.5);
+  border-radius:14px;
+  color:#1e293b;font-size:15px;font-family:inherit;
+  outline:none;transition:border-color 0.2s,box-shadow 0.2s;
+}
+.settings-input:focus{border-color:rgba(16,185,129,0.35);box-shadow:0 0 16px rgba(16,185,129,0.08)}
+.settings-input::placeholder{color:#94a3b8}
+.settings-computed{font-size:13px;font-weight:500;color:#64748b;margin-top:12px;padding:10px 14px;background:rgba(148,163,184,0.08);border-radius:12px}
+.settings-computed strong{color:#1e293b}
+.settings-save{
+  width:100%;padding:14px;border:none;border-radius:14px;
+  background:#10b981;color:#fff;font-size:15px;font-weight:600;
+  font-family:inherit;cursor:pointer;
+  box-shadow:0 4px 20px rgba(16,185,129,0.25);
+  transition:transform 0.15s;margin-top:8px;
+}
+.settings-save:active{transform:scale(0.98)}
+.settings-danger{
+  width:100%;padding:14px;border:none;border-radius:14px;
+  background:rgba(244,63,94,0.1);color:#f43f5e;font-size:14px;font-weight:600;
+  font-family:inherit;cursor:pointer;transition:transform 0.15s;margin-top:8px;
+}
+.settings-danger:active{transform:scale(0.98)}
+
+/* ── Camera Overlay ── */
+.camera-overlay{
+  position:fixed;inset:0;z-index:60;
+  background:#000;display:none;
+  flex-direction:column;align-items:center;justify-content:center;
+}
+.camera-overlay.active{display:flex}
+.camera-overlay video{width:100%;height:100%;object-fit:cover}
+.camera-overlay .camera-controls{
+  position:absolute;bottom:40px;left:0;right:0;
+  display:flex;align-items:center;justify-content:center;gap:24px;
+}
+.camera-capture{
+  width:72px;height:72px;border-radius:50%;
+  border:4px solid #fff;background:rgba(255,255,255,0.3);
+  backdrop-filter:blur(8px);cursor:pointer;transition:transform 0.15s;
+}
+.camera-capture:active{transform:scale(0.9)}
+.camera-cancel{
+  background:rgba(255,255,255,0.15);backdrop-filter:blur(8px);
+  border:1px solid rgba(255,255,255,0.2);border-radius:50%;
+  width:48px;height:48px;display:flex;align-items:center;justify-content:center;
+  color:#fff;cursor:pointer;
+}
+.camera-cancel svg{width:24px;height:24px;stroke-width:1.5}
+
+/* ── Camera hotbar button ── */
+.cam-btn{
+  position:absolute;left:50%;top:-24px;transform:translateX(calc(-50% + 52px));
+  width:44px;height:44px;border-radius:50%;
+  border:1px solid rgba(255,255,255,0.5);
+  background:rgba(255,255,255,0.7);
+  backdrop-filter:blur(16px);
+  color:#64748b;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 16px rgba(0,0,0,0.1);
+  transition:all 0.2s;
+}
+.cam-btn:hover{color:#1e293b;transform:translateX(calc(-50% + 52px)) scale(1.05)}
+.cam-btn:active{transform:translateX(calc(-50% + 52px)) scale(0.95)}
+.cam-btn svg{width:20px;height:20px;stroke-width:1.5}
+
+/* ── Empty state ── */
+.empty-state{text-align:center;padding:40px 20px;color:#94a3b8}
+.empty-state svg{width:48px;height:48px;stroke-width:1;margin-bottom:12px;opacity:0.5}
+.empty-state p{font-size:14px;font-weight:500}
+.empty-state .empty-hint{font-size:12px;margin-top:4px;color:#cbd5e1}
+
+/* ── Processing state ── */
+.mic-btn.processing{
+  background:linear-gradient(to top right,#6366f1,#818cf8);
+  border-color:rgba(99,102,241,0.5);
+  box-shadow:0 0 40px rgba(99,102,241,0.3),0 8px 32px rgba(0,0,0,0.2);
+  animation:processingPulse 1.5s ease-in-out infinite;
+}
+@keyframes processingPulse{0%,100%{opacity:1}50%{opacity:0.7}}
 </style>
 </head>
 <body>
@@ -303,6 +404,8 @@ body{position:relative;overflow-x:hidden}
     </div>
   </div>
 
+  <!-- Home View wrapper -->
+  <div id="home-view">
   <!-- Dashboard -->
   <div class="dashboard">
     <div class="dashboard-inner">
@@ -323,21 +426,21 @@ body{position:relative;overflow-x:hidden}
         <div class="macro-row">
           <div class="macro-header">
             <span class="macro-name">Protein</span>
-            <span class="macro-val"><strong id="protein-val">0</strong> / 150g</span>
+            <span class="macro-val"><strong id="protein-val">0</strong> / <span id="protein-goal-display">150</span>g</span>
           </div>
           <div class="macro-bar protein"><div class="macro-bar-fill" id="protein-bar" style="width:0%"></div></div>
         </div>
         <div class="macro-row">
           <div class="macro-header">
             <span class="macro-name">Carbs</span>
-            <span class="macro-val"><strong id="carbs-val">0</strong> / 200g</span>
+            <span class="macro-val"><strong id="carbs-val">0</strong> / <span id="carbs-goal-display">200</span>g</span>
           </div>
           <div class="macro-bar carbs"><div class="macro-bar-fill" id="carbs-bar" style="width:0%"></div></div>
         </div>
         <div class="macro-row">
           <div class="macro-header">
             <span class="macro-name">Fat</span>
-            <span class="macro-val"><strong id="fat-val">0</strong> / 70g</span>
+            <span class="macro-val"><strong id="fat-val">0</strong> / <span id="fat-goal-display">70</span>g</span>
           </div>
           <div class="macro-bar fat"><div class="macro-bar-fill" id="fat-bar" style="width:0%"></div></div>
         </div>
@@ -352,6 +455,42 @@ body{position:relative;overflow-x:hidden}
       <button class="logs-see-all">See all</button>
     </div>
     <div class="logs-list" id="logs-list"></div>
+  </div>
+  </div><!-- /home-view -->
+
+  <!-- Settings View -->
+  <div class="settings-view" id="settings-view">
+    <h1 class="settings-title">Settings</h1>
+
+    <div class="settings-card">
+      <div class="settings-card-title">API Keys</div>
+      <div class="settings-group">
+        <label class="settings-label" for="input-openai-key">OpenAI API Key (Whisper)</label>
+        <input class="settings-input" id="input-openai-key" type="password" placeholder="sk-..." autocomplete="off">
+      </div>
+      <div class="settings-group">
+        <label class="settings-label" for="input-anthropic-key">Anthropic API Key (Claude)</label>
+        <input class="settings-input" id="input-anthropic-key" type="password" placeholder="sk-ant-..." autocomplete="off">
+      </div>
+    </div>
+
+    <div class="settings-card">
+      <div class="settings-card-title">Daily Goals</div>
+      <div class="settings-group">
+        <label class="settings-label" for="input-target-cal">Target Calories</label>
+        <input class="settings-input" id="input-target-cal" type="number" min="500" max="10000" placeholder="2200">
+      </div>
+      <div class="settings-group">
+        <label class="settings-label" for="input-protein-goal">Protein Goal (g)</label>
+        <input class="settings-input" id="input-protein-goal" type="number" min="0" max="500" placeholder="150">
+      </div>
+      <div class="settings-computed" id="computed-macros">
+        Carbs: <strong>220g</strong> &middot; Fat: <strong>80g</strong> <span style="color:#94a3b8">(auto-scaled)</span>
+      </div>
+    </div>
+
+    <button class="settings-save" id="settings-save">Save Settings</button>
+    <button class="settings-danger" id="clear-logs-btn">Clear All Logs</button>
   </div>
 
 </div>
@@ -392,10 +531,10 @@ body{position:relative;overflow-x:hidden}
 
     <!-- Left Side -->
     <div class="hotbar-side">
-      <button class="hotbar-btn active">
+      <button class="hotbar-btn active" id="nav-home">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
       </button>
-      <button class="hotbar-btn">
+      <button class="hotbar-btn" id="nav-history">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
       </button>
     </div>
@@ -406,12 +545,17 @@ body{position:relative;overflow-x:hidden}
       <div id="stop-icon" class="stop-icon" style="display:none"></div>
     </button>
 
+    <!-- Camera Button (independent) -->
+    <button class="cam-btn" id="cam-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14.5 4h-5L8 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-4l-1.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+    </button>
+
     <!-- Right Side -->
     <div class="hotbar-side">
-      <button class="hotbar-btn">
+      <button class="hotbar-btn" id="nav-target">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
       </button>
-      <button class="hotbar-btn">
+      <button class="hotbar-btn" id="nav-settings">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
       </button>
     </div>
@@ -419,20 +563,50 @@ body{position:relative;overflow-x:hidden}
   </div>
 </div>
 
+<!-- Camera Overlay -->
+<div class="camera-overlay" id="camera-overlay">
+  <video id="camera-video" playsinline autoplay></video>
+  <div class="camera-controls">
+    <button class="camera-cancel" id="camera-cancel">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <button class="camera-capture" id="camera-capture"></button>
+  </div>
+</div>
+<canvas id="camera-canvas" style="display:none"></canvas>
+
 <script>
 (function(){
   'use strict';
 
-  // ── State ──
-  const CALORIE_GOAL = 2200;
-  const MACRO_GOALS = { protein: 150, carbs: 200, fat: 70 };
-  let logs = [
-    { id:'1', name:'Grilled Chicken Salad', calories:420, time:'12:30 PM', icon:'meal', macros:{protein:45,carbs:12,fat:18}, quality:'green' },
-    { id:'2', name:'Black Coffee', calories:5, time:'8:00 AM', icon:'drink', macros:{protein:0,carbs:1,fat:0}, quality:'green' },
-    { id:'3', name:'Apple & Almonds', calories:210, time:'3:15 PM', icon:'snack', macros:{protein:6,carbs:25,fat:12}, quality:'yellow' },
-  ];
+  // ── Settings & Persistence ──
+  const STORAGE = { settings: 'vcal_settings', logs: 'vcal_logs' };
+  const DEFAULTS = { openaiKey: '', anthropicKey: '', targetCalories: 2200, proteinGoal: 150 };
+
+  function loadSettings() {
+    try { return Object.assign({}, DEFAULTS, JSON.parse(localStorage.getItem(STORAGE.settings))); }
+    catch { return Object.assign({}, DEFAULTS); }
+  }
+  function saveSettings(s) { settings = s; localStorage.setItem(STORAGE.settings, JSON.stringify(s)); }
+  function loadLogs() {
+    try { return JSON.parse(localStorage.getItem(STORAGE.logs)) || []; }
+    catch { return []; }
+  }
+  function saveLogs() { localStorage.setItem(STORAGE.logs, JSON.stringify(logs)); }
+
+  function computeMacros(cal, proteinG) {
+    const remaining = Math.max(cal - proteinG * 4, 0);
+    return { protein: proteinG, carbs: Math.round(remaining * 0.55 / 4), fat: Math.round(remaining * 0.45 / 9) };
+  }
+  function getMacroGoals() { return computeMacros(settings.targetCalories, settings.proteinGoal); }
+
+  let settings = loadSettings();
+  let logs = loadLogs();
   let isLogging = false;
-  let voiceTimeouts = [];
+  let isProcessing = false;
+  let mediaRecorder = null;
+  let audioChunks = [];
+  let currentView = 'home';
 
   // ── Elements ──
   const $ = id => document.getElementById(id);
@@ -451,8 +625,11 @@ body{position:relative;overflow-x:hidden}
   const voiceIsland = $('voice-island');
   const voiceTranscript = $('voice-transcript');
   const snapBtn = $('snap-btn');
-  const toast = $('toast');
+  const toastEl = $('toast');
   const toastMsg = $('toast-msg');
+  const homeView = $('home-view');
+  const settingsView = $('settings-view');
+  const computedMacros = $('computed-macros');
 
   // ── Date Header ──
   const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
@@ -468,15 +645,60 @@ body{position:relative;overflow-x:hidden}
     drink: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 8h1a4 4 0 1 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><line x1="6" y1="2" x2="6" y2="4"/><line x1="10" y1="2" x2="10" y2="4"/><line x1="14" y1="2" x2="14" y2="4"/></svg>',
   };
 
+  // ── Navigation ──
+  function switchView(view) {
+    currentView = view;
+    homeView.style.display = view === 'home' ? '' : 'none';
+    settingsView.style.display = view === 'settings' ? 'block' : 'none';
+    document.querySelectorAll('.hotbar-btn').forEach(b => b.classList.remove('active'));
+    if (view === 'home') $('nav-home').classList.add('active');
+    if (view === 'settings') $('nav-settings').classList.add('active');
+    if (view === 'settings') populateSettings();
+  }
+  $('nav-home').onclick = () => switchView('home');
+  $('nav-history').onclick = () => showToast('History coming soon');
+  $('nav-target').onclick = () => switchView('settings');
+  $('nav-settings').onclick = () => switchView('settings');
+
+  // ── Settings UI ──
+  function populateSettings() {
+    $('input-openai-key').value = settings.openaiKey;
+    $('input-anthropic-key').value = settings.anthropicKey;
+    $('input-target-cal').value = settings.targetCalories;
+    $('input-protein-goal').value = settings.proteinGoal;
+    updateComputedMacros();
+  }
+  function updateComputedMacros() {
+    const cal = parseInt($('input-target-cal').value) || 2200;
+    const p = parseInt($('input-protein-goal').value) || 150;
+    const m = computeMacros(cal, p);
+    computedMacros.innerHTML = `Carbs: <strong>${m.carbs}g</strong> &middot; Fat: <strong>${m.fat}g</strong> <span style="color:#94a3b8">(auto-scaled)</span>`;
+  }
+  $('input-target-cal').addEventListener('input', updateComputedMacros);
+  $('input-protein-goal').addEventListener('input', updateComputedMacros);
+  $('settings-save').onclick = () => {
+    settings.openaiKey = $('input-openai-key').value.trim();
+    settings.anthropicKey = $('input-anthropic-key').value.trim();
+    settings.targetCalories = parseInt($('input-target-cal').value) || 2200;
+    settings.proteinGoal = parseInt($('input-protein-goal').value) || 150;
+    saveSettings(settings);
+    render();
+    showToast('Settings saved');
+  };
+  $('clear-logs-btn').onclick = () => {
+    if (confirm('Clear all food logs?')) { logs = []; saveLogs(); render(); showToast('Logs cleared'); }
+  };
+
   // ── Render ──
-  function render(){
+  function render() {
+    const goals = getMacroGoals();
     const totalCal = logs.reduce((s,l) => s + l.calories, 0);
     const totalP = logs.reduce((s,l) => s + l.macros.protein, 0);
     const totalC = logs.reduce((s,l) => s + l.macros.carbs, 0);
     const totalF = logs.reduce((s,l) => s + l.macros.fat, 0);
 
     // Calorie ring
-    const pct = Math.min(totalCal / CALORIE_GOAL, 1);
+    const pct = Math.min(totalCal / settings.targetCalories, 1);
     const circumference = 283;
     calProgress.setAttribute('stroke-dashoffset', circumference - circumference * pct);
     calNum.textContent = totalCal;
@@ -485,15 +707,22 @@ body{position:relative;overflow-x:hidden}
     proteinVal.textContent = totalP;
     carbsVal.textContent = totalC;
     fatVal.textContent = totalF;
-    proteinBar.style.width = Math.min(totalP / MACRO_GOALS.protein * 100, 100) + '%';
-    carbsBar.style.width = Math.min(totalC / MACRO_GOALS.carbs * 100, 100) + '%';
-    fatBar.style.width = Math.min(totalF / MACRO_GOALS.fat * 100, 100) + '%';
+    $('protein-goal-display').textContent = goals.protein;
+    $('carbs-goal-display').textContent = goals.carbs;
+    $('fat-goal-display').textContent = goals.fat;
+    proteinBar.style.width = Math.min(totalP / goals.protein * 100, 100) + '%';
+    carbsBar.style.width = Math.min(totalC / goals.carbs * 100, 100) + '%';
+    fatBar.style.width = Math.min(totalF / goals.fat * 100, 100) + '%';
 
     // Logs
+    if (logs.length === 0) {
+      logsList.innerHTML = '<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg><p>No logs yet</p><p class="empty-hint">Tap the mic to log food by voice</p></div>';
+      return;
+    }
     logsList.innerHTML = logs.map(log => `
       <div class="log-card">
         <div class="log-left">
-          <div class="log-icon ${log.icon}">${icons[log.icon]}</div>
+          <div class="log-icon ${log.icon}">${icons[log.icon] || icons.meal}</div>
           <div class="log-info">
             <div class="log-name-row">
               <span class="log-name">${log.name}</span>
@@ -519,86 +748,251 @@ body{position:relative;overflow-x:hidden}
 
   // ── Toast ──
   let toastTimer;
-  function showToast(msg){
+  function showToast(msg) {
     toastMsg.textContent = msg;
-    toast.classList.add('show');
+    toastEl.classList.add('show');
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => toast.classList.remove('show'), 2500);
+    toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2500);
   }
 
-  // ── Voice Logging ──
-  function startLogging(){
-    isLogging = true;
-    micBtn.classList.add('recording');
-    micIcon.style.display = 'none';
-    stopIcon.style.display = 'block';
-    voiceTranscript.textContent = 'Listening...';
-    voiceIsland.classList.remove('hide');
-    voiceIsland.classList.add('show');
-
-    voiceTimeouts.push(setTimeout(() => { voiceTranscript.textContent = 'I had a...'; }, 1000));
-    voiceTimeouts.push(setTimeout(() => { voiceTranscript.textContent = 'I had a protein shake...'; }, 2000));
-    voiceTimeouts.push(setTimeout(() => {
-      if (!isLogging) return;
-      addLog({
-        id: Date.now().toString(),
-        name: 'Protein Shake',
-        calories: 240,
-        time: new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}),
-        icon: 'drink',
-        macros: {protein:30, carbs:15, fat:5},
-        quality: 'green'
-      });
-      showToast('Added Protein Shake');
-      stopLogging();
-    }, 4000));
+  function addLog(log) {
+    logs.unshift(log);
+    saveLogs();
+    render();
   }
 
-  function stopLogging(){
+  // ── Voice Recording (Whisper) ──
+  async function startLogging() {
+    if (!settings.openaiKey) { showToast('Set OpenAI API key in Settings'); switchView('settings'); return; }
+    if (!settings.anthropicKey) { showToast('Set Anthropic API key in Settings'); switchView('settings'); return; }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      isLogging = true;
+      audioChunks = [];
+      micBtn.classList.add('recording');
+      micIcon.style.display = 'none';
+      stopIcon.style.display = 'block';
+      voiceTranscript.textContent = 'Listening...';
+      voiceIsland.classList.remove('hide');
+      voiceIsland.classList.add('show');
+
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+        ? 'audio/webm;codecs=opus'
+        : MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4';
+
+      mediaRecorder = new MediaRecorder(stream, { mimeType });
+      mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
+      mediaRecorder.onstop = async () => {
+        stream.getTracks().forEach(t => t.stop());
+        if (audioChunks.length === 0) { resetMicUI(); return; }
+        await transcribeAndAnalyze();
+      };
+      mediaRecorder.start();
+    } catch (err) {
+      showToast('Microphone access denied');
+      resetMicUI();
+    }
+  }
+
+  function stopLogging() {
+    if (!isLogging) return;
     isLogging = false;
-    voiceTimeouts.forEach(clearTimeout);
-    voiceTimeouts = [];
-    micBtn.classList.remove('recording');
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+      mediaRecorder.stop();
+    } else {
+      resetMicUI();
+    }
+  }
+
+  function resetMicUI() {
+    isLogging = false;
+    isProcessing = false;
+    micBtn.classList.remove('recording', 'processing');
     micIcon.style.display = 'block';
     stopIcon.style.display = 'none';
     voiceIsland.classList.remove('show');
     voiceIsland.classList.add('hide');
   }
 
-  function addLog(log){
-    logs.unshift(log);
-    render();
+  async function transcribeAndAnalyze() {
+    isProcessing = true;
+    micBtn.classList.remove('recording');
+    micBtn.classList.add('processing');
+    micIcon.style.display = 'block';
+    stopIcon.style.display = 'none';
+    voiceTranscript.textContent = 'Transcribing...';
+
+    try {
+      const ext = audioChunks[0].type.includes('mp4') ? 'mp4' : 'webm';
+      const blob = new Blob(audioChunks, { type: audioChunks[0].type });
+      const formData = new FormData();
+      formData.append('file', blob, `audio.${ext}`);
+      formData.append('model', 'whisper-1');
+
+      const res = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + settings.openaiKey },
+        body: formData
+      });
+
+      if (!res.ok) {
+        const errText = res.status === 401 ? 'Invalid OpenAI API key' : `Whisper error (${res.status})`;
+        showToast(errText); resetMicUI(); return;
+      }
+
+      const data = await res.json();
+      const transcript = data.text;
+      voiceTranscript.textContent = transcript;
+
+      await analyzeWithClaude(transcript);
+    } catch (err) {
+      showToast('Network error — try again');
+      resetMicUI();
+    }
+  }
+
+  // ── Claude Food Analysis ──
+  async function analyzeWithClaude(text) {
+    voiceTranscript.textContent = 'Analyzing...';
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': settings.anthropicKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 300,
+          messages: [{ role: 'user', content: `Extract nutrition info from this food log entry. Return ONLY valid JSON, no markdown fences.\n\nFormat: {"name":"Food Name","calories":NUMBER,"protein":NUMBER,"carbs":NUMBER,"fat":NUMBER,"icon":"meal|snack|drink","quality":"green|yellow|red"}\n\nQuality: green=healthy/whole foods, yellow=moderate, red=junk/high-sugar.\nIcon: meal=main meals, snack=snacks/fruits/bars, drink=beverages.\nEstimate reasonable values if exact amounts unknown.\n\nEntry: "${text}"` }]
+        })
+      });
+
+      if (!res.ok) {
+        const errText = res.status === 401 ? 'Invalid Anthropic API key' : `Claude error (${res.status})`;
+        showToast(errText); resetMicUI(); return;
+      }
+
+      const data = await res.json();
+      let raw = data.content[0].text.replace(/```json?\s*/g, '').replace(/```\s*/g, '').trim();
+      const parsed = JSON.parse(raw);
+
+      addLog({
+        id: Date.now().toString(),
+        name: parsed.name || 'Unknown Food',
+        calories: parsed.calories || 0,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        icon: ['meal','snack','drink'].includes(parsed.icon) ? parsed.icon : 'meal',
+        macros: { protein: parsed.protein || 0, carbs: parsed.carbs || 0, fat: parsed.fat || 0 },
+        quality: ['green','yellow','red'].includes(parsed.quality) ? parsed.quality : 'yellow'
+      });
+      showToast('Added ' + (parsed.name || 'food entry'));
+      resetMicUI();
+    } catch (err) {
+      console.error('Claude parse error:', err);
+      showToast('Could not parse food data');
+      resetMicUI();
+    }
   }
 
   micBtn.addEventListener('click', () => {
+    if (isProcessing) return;
     if (isLogging) stopLogging();
     else startLogging();
   });
 
-  // ── Snap Label ──
-  snapBtn.addEventListener('click', () => {
-    stopLogging();
-    setTimeout(() => {
+  // ── Camera / Label Scanning ──
+  const cameraOverlay = $('camera-overlay');
+  const cameraVideo = $('camera-video');
+  const cameraCanvas = $('camera-canvas');
+  let cameraStream = null;
+
+  async function openCamera() {
+    if (!settings.anthropicKey) { showToast('Set Anthropic API key in Settings'); switchView('settings'); return; }
+    try {
+      cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      cameraVideo.srcObject = cameraStream;
+      cameraOverlay.classList.add('active');
+    } catch (err) {
+      showToast('Camera access denied');
+    }
+  }
+
+  function closeCamera() {
+    if (cameraStream) { cameraStream.getTracks().forEach(t => t.stop()); cameraStream = null; }
+    cameraVideo.srcObject = null;
+    cameraOverlay.classList.remove('active');
+  }
+
+  async function captureAndAnalyze() {
+    const video = cameraVideo;
+    const canvas = cameraCanvas;
+    // Scale down to max 1024px
+    const scale = Math.min(1024 / Math.max(video.videoWidth, video.videoHeight), 1);
+    canvas.width = video.videoWidth * scale;
+    canvas.height = video.videoHeight * scale;
+    canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+    const base64 = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
+    closeCamera();
+    showToast('Scanning label...');
+
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': settings.anthropicKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 300,
+          messages: [{ role: 'user', content: [
+            { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: base64 } },
+            { type: 'text', text: 'Extract nutrition info from this food or nutrition label. Return ONLY valid JSON, no markdown fences.\n\nFormat: {"name":"Food Name","calories":NUMBER,"protein":NUMBER,"carbs":NUMBER,"fat":NUMBER,"icon":"meal|snack|drink","quality":"green|yellow|red"}\n\nIf no nutrition label visible, estimate from what you see in the image.' }
+          ] }]
+        })
+      });
+
+      if (!res.ok) {
+        showToast(res.status === 401 ? 'Invalid Anthropic API key' : `Vision error (${res.status})`);
+        return;
+      }
+
+      const data = await res.json();
+      let raw = data.content[0].text.replace(/```json?\s*/g, '').replace(/```\s*/g, '').trim();
+      const parsed = JSON.parse(raw);
+
       addLog({
         id: Date.now().toString(),
-        name: 'Scanned Nutrition Label',
-        calories: 310,
-        time: new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}),
-        icon: 'snack',
-        macros: {protein:12, carbs:40, fat:8},
-        quality: 'yellow'
+        name: parsed.name || 'Scanned Label',
+        calories: parsed.calories || 0,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        icon: ['meal','snack','drink'].includes(parsed.icon) ? parsed.icon : 'snack',
+        macros: { protein: parsed.protein || 0, carbs: parsed.carbs || 0, fat: parsed.fat || 0 },
+        quality: ['green','yellow','red'].includes(parsed.quality) ? parsed.quality : 'yellow'
       });
-      showToast('Label scanned & logged');
-    }, 400);
-  });
+      showToast('Added ' + (parsed.name || 'scanned item'));
+    } catch (err) {
+      console.error('Vision parse error:', err);
+      showToast('Could not parse label');
+    }
+  }
+
+  // Camera buttons
+  $('cam-btn').onclick = () => openCamera();
+  snapBtn.addEventListener('click', () => { stopLogging(); openCamera(); });
+  $('camera-capture').onclick = () => captureAndAnalyze();
+  $('camera-cancel').onclick = () => closeCamera();
 
   // ── Init ──
   render();
-  // Animate initial calorie ring on load
   calProgress.setAttribute('stroke-dashoffset', '283');
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => render());
-  });
+  requestAnimationFrame(() => { requestAnimationFrame(() => render()); });
 })();
 </script>
 </body>
