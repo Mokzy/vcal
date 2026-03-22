@@ -399,7 +399,7 @@ body{position:relative;overflow-x:hidden}
       <div class="header-date" id="header-date"></div>
       <h1 class="header-title">Summary</h1>
     </div>
-    <div class="header-avatar">
+    <div class="header-avatar" id="header-avatar">
       <img src="https://images.unsplash.com/photo-1510711070725-068a3a878a99?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=200&q=80" alt="Profile" onerror="this.style.display='none'">
     </div>
   </div>
@@ -555,9 +555,6 @@ body{position:relative;overflow-x:hidden}
       <button class="hotbar-btn" id="nav-target">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
       </button>
-      <button class="hotbar-btn" id="nav-settings">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-      </button>
     </div>
 
   </div>
@@ -652,13 +649,12 @@ body{position:relative;overflow-x:hidden}
     settingsView.style.display = view === 'settings' ? 'block' : 'none';
     document.querySelectorAll('.hotbar-btn').forEach(b => b.classList.remove('active'));
     if (view === 'home') $('nav-home').classList.add('active');
-    if (view === 'settings') $('nav-settings').classList.add('active');
     if (view === 'settings') populateSettings();
   }
   $('nav-home').onclick = () => switchView('home');
   $('nav-history').onclick = () => showToast('History coming soon');
   $('nav-target').onclick = () => switchView('settings');
-  $('nav-settings').onclick = () => switchView('settings');
+  $('header-avatar').onclick = () => switchView('settings');
 
   // ── Settings UI ──
   function populateSettings() {
