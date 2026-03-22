@@ -418,8 +418,10 @@ body{position:relative;overflow-x:hidden}
 
 /* ── Serving badge on log cards ── */
 .log-serving{font-size:11px;font-weight:600;color:#10b981;margin-left:4px}
-.log-card{cursor:pointer;transition:transform 0.15s,box-shadow 0.15s}
+.log-card{cursor:pointer;transition:transform 0.3s,opacity 0.3s;touch-action:pan-y;user-select:none}
 .log-card:active{transform:scale(0.98)}
+.log-card.swiping{transition:none}
+.log-card.dismissed{transition:transform 0.3s ease-out,opacity 0.3s ease-out;opacity:0}
 </style>
 </head>
 <body>
@@ -826,9 +828,40 @@ body{position:relative;overflow-x:hidden}
         </div>
       </div>
     `).join('');
-    // Attach click handlers for editing
+    // Attach click + swipe handlers
     logsList.querySelectorAll('.log-card[data-id]').forEach(card => {
-      card.onclick = () => openEditModal(card.dataset.id);
+      let startX = 0, currentX = 0, swiping = false;
+      card.addEventListener('touchstart', e => {
+        startX = e.touches[0].clientX; currentX = 0; swiping = false;
+      }, { passive: true });
+      card.addEventListener('touchmove', e => {
+        const dx = e.touches[0].clientX - startX;
+        if (Math.abs(dx) > 10) swiping = true;
+        if (swiping) {
+          currentX = dx;
+          card.classList.add('swiping');
+          card.style.transform = `translateX(${dx}px)`;
+          card.style.opacity = Math.max(0, 1 - Math.abs(dx) / 200);
+        }
+      }, { passive: true });
+      card.addEventListener('touchend', () => {
+        card.classList.remove('swiping');
+        if (Math.abs(currentX) > 100) {
+          card.classList.add('dismissed');
+          card.style.transform = `translateX(${currentX > 0 ? 400 : -400}px)`;
+          card.style.opacity = '0';
+          setTimeout(() => {
+            logs = logs.filter(l => l.id !== card.dataset.id);
+            saveLogs(); render();
+            showToast('Entry removed');
+          }, 300);
+        } else {
+          card.style.transform = '';
+          card.style.opacity = '';
+          if (!swiping) openEditModal(card.dataset.id);
+        }
+        swiping = false; currentX = 0;
+      });
     });
   }
 
@@ -982,7 +1015,7 @@ body{position:relative;overflow-x:hidden}
         body: JSON.stringify({
           model: 'claude-sonnet-4-20250514',
           max_tokens: 1024,
-          messages: [{ role: 'user', content: `Break down this food log entry into INDIVIDUAL ingredients. Use USDA FoodData Central nutrition values per single serving. Return ONLY a valid JSON array, no markdown fences.\n\nFormat: [{"name":"Ingredient Name","servings":NUMBER,"calories_per_serving":NUMBER,"protein_per_serving":NUMBER,"carbs_per_serving":NUMBER,"fat_per_serving":NUMBER,"icon":"meal|snack|drink","quality":"green|yellow|red"}]\n\nRules:\n- Each ingredient is a separate item in the array\n- "servings" is how many of that item (e.g. "3 eggs" = name:"Egg", servings:3)\n- Nutrition values are PER SINGLE SERVING based on USDA standard portions\n- calories_per_serving, protein/carbs/fat_per_serving are per 1 serving\n- Quality: green=healthy/whole foods, yellow=moderate, red=junk/high-sugar\n- Icon: meal=main meals/proteins, snack=snacks/fruits/bars, drink=beverages\n\nExample: "3 eggs and 2 chicken sausages" → [{"name":"Egg","servings":3,"calories_per_serving":72,"protein_per_serving":6,"carbs_per_serving":0,"fat_per_serving":5,"icon":"meal","quality":"green"},{"name":"Chicken Sausage","servings":2,"calories_per_serving":130,"protein_per_serving":13,"carbs_per_serving":2,"fat_per_serving":7,"icon":"meal","quality":"yellow"}]\n\nEntry: "${text}"` }]
+          messages: [{ role: 'user', content: `Break down this food log entry into INDIVIDUAL ingredients. Use USDA FoodData Central nutrition values per single serving. Return ONLY a valid JSON array, no markdown fences.\n\nFormat: [{"name":"Ingredient Name","servings":NUMBER,"calories_per_serving":NUMBER,"protein_per_serving":NUMBER,"carbs_per_serving":NUMBER,"fat_per_serving":NUMBER,"icon":"meal|snack|drink","quality":"green|yellow|red"}]\n\nRules:\n- If the text does NOT mention any food or drink, return an empty array: []\n- Each ingredient is a separate item in the array\n- "servings" is how many of that item (e.g. "3 eggs" = name:"Egg", servings:3)\n- Nutrition values are PER SINGLE SERVING based on USDA standard portions\n- calories_per_serving, protein/carbs/fat_per_serving are per 1 serving\n- Quality: green=healthy/whole foods, yellow=moderate, red=junk/high-sugar\n- Icon: meal=main meals/proteins, snack=snacks/fruits/bars, drink=beverages\n\nEntry: "${text}"` }]
         })
       });
 
@@ -995,13 +1028,15 @@ body{position:relative;overflow-x:hidden}
       let raw = data.content[0].text.replace(/```json?\s*/g, '').replace(/```\s*/g, '').trim();
       const items = JSON.parse(raw);
       const arr = Array.isArray(items) ? items : [items];
+      const filtered = arr.filter(item => item.name && item.calories_per_serving > 0);
+      if (filtered.length === 0) { showToast('No food detected'); resetMicUI(); return; }
       const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-      arr.forEach((item, i) => {
+      filtered.forEach((item, i) => {
         const s = item.servings || 1;
         addLog({
           id: (Date.now() + i).toString(),
-          name: item.name || 'Unknown Food',
+          name: item.name,
           servings: s,
           caloriesPerServing: item.calories_per_serving || 0,
           proteinPerServing: item.protein_per_serving || 0,
@@ -1018,7 +1053,7 @@ body{position:relative;overflow-x:hidden}
           quality: ['green','yellow','red'].includes(item.quality) ? item.quality : 'yellow'
         });
       });
-      showToast(`Added ${arr.length} item${arr.length > 1 ? 's' : ''}`);
+      showToast(`Added ${filtered.length} item${filtered.length > 1 ? 's' : ''}`);
       resetMicUI();
     } catch (err) {
       console.error('Claude parse error:', err);
