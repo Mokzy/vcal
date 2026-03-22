@@ -460,7 +460,12 @@ body{position:relative;overflow-x:hidden}
 
   <!-- Settings View -->
   <div class="settings-view" id="settings-view">
-    <h1 class="settings-title">Settings</h1>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px">
+      <button id="settings-back" style="background:none;border:none;cursor:pointer;color:#64748b;display:flex;align-items:center;padding:4px">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <h1 class="settings-title" style="margin-bottom:0">Settings</h1>
+    </div>
 
     <div class="settings-card">
       <div class="settings-card-title">API Keys</div>
@@ -656,6 +661,7 @@ body{position:relative;overflow-x:hidden}
   $('nav-history').onclick = () => showToast('History coming soon');
   $('nav-target').onclick = () => switchView('settings');
   $('header-avatar').onclick = () => switchView('settings');
+  $('settings-back').onclick = () => switchView('home');
 
   // ── Settings UI ──
   function populateSettings() {
