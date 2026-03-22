@@ -1,0 +1,18 @@
+{
+  "name": "vCal — Voice Calorie Tracker",
+  "short_name": "vCal",
+  "description": "Voice-first calorie and macro tracker",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#f8fafc",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='96' fill='%2310b981'/><text x='256' y='350' text-anchor='middle' font-size='280'>🔥</text></svg>",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

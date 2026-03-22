@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="vCal">
+<meta name="theme-color" content="#f8fafc">
+<title>vCal — Voice Calorie Tracker</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%2310b981'/><text x='50' y='68' text-anchor='middle' font-size='52'>🔥</text></svg>">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' rx='36' fill='%2310b981'/><text x='90' y='120' text-anchor='middle' font-size='90'>🔥</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ── Reset ── */
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#f8fafc;
+  --text:#1e293b;
+  --text-sub:#64748b;
+  --text-dim:#94a3b8;
+  --glass:rgba(255,255,255,0.6);
+  --glass-border:rgba(255,255,255,0.5);
+  --glass-subtle:rgba(255,255,255,0.5);
+  --shadow:rgba(0,0,0,0.04);
+  --accent:#10b981;
+  --accent-glow:rgba(16,185,129,0.25);
+}
+html,body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  min-height:100vh;min-height:100dvh;
+  overscroll-behavior:none;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+}
+body{position:relative;overflow-x:hidden}
+::-webkit-scrollbar{width:0;display:none}
+
+/* ── Mesh Background ── */
+.mesh-bg{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none;overflow:hidden;background:#f8fafc}
+.mesh-bg .orb{position:absolute;border-radius:50%;filter:blur(100px)}
+.mesh-bg .orb1{top:-10%;left:-10%;width:50%;height:50%;background:rgba(96,165,250,0.3);animation:orbPulse 8s ease-in-out infinite}
+.mesh-bg .orb2{top:20%;right:-10%;width:60%;height:60%;background:rgba(253,164,175,0.3);animation:orbPulse 10s ease-in-out infinite}
+.mesh-bg .orb3{bottom:-10%;left:20%;width:70%;height:70%;background:rgba(110,231,183,0.2);animation:orbPulse 12s ease-in-out infinite}
+@keyframes orbPulse{0%,100%{opacity:1}50%{opacity:0.5}}
+
+/* ── App Container ── */
+.app{max-width:448px;margin:0 auto;min-height:100vh;min-height:100dvh;position:relative;padding-bottom:140px;padding-top:env(safe-area-inset-top);z-index:1}
+
+/* ── Header ── */
+.header{display:flex;align-items:center;justify-content:space-between;padding:48px 24px 8px}
+.header-date{font-size:13px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#64748b}
+.header-title{font-size:30px;font-weight:700;letter-spacing:-0.02em;color:#0f172a;margin-top:2px}
+.header-avatar{width:48px;height:48px;border-radius:50%;overflow:hidden;border:2px solid #fff;box-shadow:0 4px 16px rgba(0,0,0,0.06);background:#e2e8f0;cursor:pointer;transition:transform 0.2s;flex-shrink:0}
+.header-avatar:hover{transform:scale(1.05)}
+.header-avatar img{width:100%;height:100%;object-fit:cover}
+
+/* ── Dashboard Card ── */
+.dashboard{
+  margin:32px 20px 0;
+  background:rgba(255,255,255,0.6);
+  backdrop-filter:blur(40px) saturate(1.8);
+  -webkit-backdrop-filter:blur(40px) saturate(1.8);
+  border:1px solid rgba(255,255,255,0.5);
+  border-radius:24px;
+  padding:24px;
+  box-shadow:0 8px 30px rgba(0,0,0,0.04);
+  overflow:hidden;
+}
+.dashboard-inner{display:flex;align-items:center;justify-content:space-between;gap:32px}
+.calorie-ring{position:relative;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.calorie-ring svg{width:112px;height:112px;transform:rotate(-90deg)}
+.calorie-ring .track{stroke:#e2e8f0;stroke-opacity:0.5;fill:transparent;stroke-width:8}
+.calorie-ring .progress{stroke:#10b981;fill:transparent;stroke-width:8;stroke-linecap:round;filter:drop-shadow(0 1px 2px rgba(16,185,129,0.3));transition:stroke-dashoffset 1s ease-out}
+.calorie-center{position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.calorie-num{font-size:30px;font-weight:600;letter-spacing:-0.02em;color:#1e293b}
+.calorie-label{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.08em;color:#64748b}
+.macros{display:flex;flex-direction:column;gap:16px;flex:1;min-width:0}
+.macro-row{display:flex;flex-direction:column;gap:6px}
+.macro-header{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;font-weight:500}
+.macro-name{color:#475569}
+.macro-val{color:#94a3b8}
+.macro-val strong{color:#1e293b;font-weight:600}
+.macro-bar{height:6px;width:100%;border-radius:9999px;overflow:hidden}
+.macro-bar-fill{height:100%;border-radius:9999px;transition:width 0.8s ease-out}
+.macro-bar.protein{background:rgba(16,185,129,0.1)}
+.macro-bar.protein .macro-bar-fill{background:#10b981}
+.macro-bar.carbs{background:rgba(99,102,241,0.1)}
+.macro-bar.carbs .macro-bar-fill{background:#6366f1}
+.macro-bar.fat{background:rgba(244,63,94,0.1)}
+.macro-bar.fat .macro-bar-fill{background:#f43f5e}
+
+/* ── Recent Logs ── */
+.logs-section{margin:32px 20px 0;padding-bottom:32px}
+.logs-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding:0 8px}
+.logs-title{font-size:14px;font-weight:600;color:#1e293b;letter-spacing:-0.01em}
+.logs-see-all{font-size:12px;font-weight:500;color:#3b82f6;background:none;border:none;cursor:pointer;font-family:inherit}
+.logs-see-all:hover{color:#2563eb}
+.logs-list{display:flex;flex-direction:column;gap:12px}
+
+.log-card{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:16px;
+  border-radius:24px;
+  background:rgba(255,255,255,0.5);
+  backdrop-filter:blur(40px);
+  -webkit-backdrop-filter:blur(40px);
+  border:1px solid rgba(255,255,255,0.6);
+  box-shadow:0 4px 16px rgba(0,0,0,0.02);
+  opacity:0;transform:translateY(10px);
+  animation:fadeInUp 0.4s ease-out forwards;
+}
+.log-card:nth-child(1){animation-delay:0s}
+.log-card:nth-child(2){animation-delay:0.1s}
+.log-card:nth-child(3){animation-delay:0.2s}
+.log-card:nth-child(4){animation-delay:0.3s}
+.log-card:nth-child(5){animation-delay:0.4s}
+@keyframes fadeInUp{to{opacity:1;transform:translateY(0)}}
+
+.log-left{display:flex;align-items:center;gap:16px;min-width:0}
+.log-icon{width:48px;height:48px;border-radius:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.log-icon.meal{background:rgba(99,102,241,0.1)}
+.log-icon.meal svg{color:#6366f1}
+.log-icon.snack{background:rgba(244,63,94,0.1)}
+.log-icon.snack svg{color:#f43f5e}
+.log-icon.drink{background:rgba(14,165,233,0.1)}
+.log-icon.drink svg{color:#0ea5e9}
+.log-icon svg{width:20px;height:20px;stroke-width:1.5}
+.log-info{display:flex;flex-direction:column;min-width:0}
+.log-name-row{display:flex;align-items:center;gap:8px}
+.log-name{font-size:15px;font-weight:500;color:#1e293b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.quality-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;box-shadow:0 1px 2px rgba(0,0,0,0.1)}
+.quality-dot.green{background:#10b981}
+.quality-dot.yellow{background:#fbbf24}
+.quality-dot.red{background:#f43f5e}
+.log-meta{display:flex;align-items:center;gap:8px;margin-top:2px}
+.log-time{font-size:12px;font-weight:500;color:#64748b;white-space:nowrap}
+.log-macros-tag{display:flex;align-items:center;gap:6px;font-size:10px;font-weight:500;color:#64748b;background:rgba(148,163,184,0.15);padding:2px 6px;border-radius:6px}
+.log-right{display:flex;align-items:baseline;gap:4px;padding-left:8px;flex-shrink:0}
+.log-cal{font-size:16px;font-weight:600;color:#1e293b}
+.log-cal-unit{font-size:10px;font-weight:600;text-transform:uppercase;color:#94a3b8}
+
+/* ── Bottom Hotbar ── */
+.hotbar-wrap{position:fixed;bottom:0;left:0;right:0;z-index:40;padding:16px 24px 32px;pointer-events:none}
+.hotbar{
+  margin:0 auto;
+  display:flex;align-items:center;justify-content:space-between;
+  max-width:384px;width:100%;
+  background:rgba(255,255,255,0.7);
+  backdrop-filter:blur(64px) saturate(1.8);
+  -webkit-backdrop-filter:blur(64px) saturate(1.8);
+  border:1px solid rgba(255,255,255,0.6);
+  border-radius:9999px;
+  padding:16px 32px;
+  box-shadow:0 16px 40px rgba(0,0,0,0.1);
+  pointer-events:auto;
+  position:relative;
+}
+.hotbar-side{display:flex;gap:24px;align-items:center}
+.hotbar-btn{background:none;border:none;padding:4px;cursor:pointer;color:#94a3b8;transition:color 0.2s;display:flex;align-items:center;justify-content:center}
+.hotbar-btn:hover,.hotbar-btn.active{color:#1e293b}
+.hotbar-btn svg{width:24px;height:24px;stroke-width:1.5}
+
+/* Center Mic Button */
+.mic-btn{
+  position:absolute;left:50%;top:-24px;transform:translateX(-50%);
+  width:72px;height:72px;border-radius:50%;
+  border:1px solid rgba(51,65,85,0.5);
+  background:linear-gradient(to top right,#1e293b,#0f172a);
+  color:#f1f5f9;
+  cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 8px 32px rgba(0,0,0,0.25);
+  transition:all 0.3s;
+}
+.mic-btn:hover{transform:translateX(-50%) scale(1.05)}
+.mic-btn:active{transform:translateX(-50%) scale(0.95)}
+.mic-btn.recording{
+  background:linear-gradient(to top right,#059669,#34d399);
+  border-color:rgba(16,185,129,0.5);
+  box-shadow:0 0 40px rgba(16,185,129,0.4),0 8px 32px rgba(0,0,0,0.2);
+}
+.mic-btn svg{width:28px;height:28px;stroke-width:1.5}
+.stop-icon{width:16px;height:16px;border-radius:3px;background:#fff}
+
+/* ── Voice Island ── */
+.voice-island{
+  position:absolute;
+  bottom:calc(100% + 16px);
+  left:50%;transform:translateX(-50%);
+  width:calc(100% - 2rem);max-width:352px;
+  background:rgba(255,255,255,0.8);
+  backdrop-filter:blur(64px) saturate(1.8);
+  -webkit-backdrop-filter:blur(64px) saturate(1.8);
+  border-radius:24px;
+  padding:12px;
+  box-shadow:0 24px 48px rgba(0,0,0,0.12);
+  border:1px solid rgba(255,255,255,0.8);
+  display:flex;align-items:stretch;gap:12px;
+  pointer-events:auto;
+  opacity:0;transform:translateX(-50%) translateY(30px) scale(0.9);
+  transition:opacity 0.35s cubic-bezier(0.34,1.56,0.64,1),transform 0.35s cubic-bezier(0.34,1.56,0.64,1);
+}
+.voice-island.show{
+  opacity:1;transform:translateX(-50%) translateY(0) scale(1);
+}
+.voice-island.hide{
+  opacity:0;transform:translateX(-50%) translateY(20px) scale(0.95);
+  pointer-events:none;
+}
+
+.voice-status{
+  flex:1;
+  background:rgba(248,250,252,0.5);
+  border-radius:16px;
+  padding:16px;
+  display:flex;flex-direction:column;justify-content:center;gap:12px;
+  border:1px solid rgba(241,245,249,0.5);
+}
+.voice-active-row{display:flex;align-items:center;gap:8px}
+.voice-dot{position:relative;display:flex;align-items:center;justify-content:center}
+.voice-dot svg{width:16px;height:16px;color:#10b981;position:relative;z-index:1}
+.voice-dot-pulse{position:absolute;inset:0;background:#34d399;border-radius:50%;filter:blur(4px);animation:voicePulse 1.5s ease-in-out infinite}
+@keyframes voicePulse{0%,100%{transform:scale(1);opacity:0.5}50%{transform:scale(1.5);opacity:0}}
+.voice-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#94a3b8}
+.voice-bottom{display:flex;align-items:flex-end;justify-content:space-between}
+.voice-transcript{font-size:14px;font-weight:500;color:#1e293b;line-height:1.4;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.voice-waves{display:flex;align-items:center;gap:2px;height:16px;opacity:0.7;flex-shrink:0;margin-left:8px}
+.voice-wave{width:4px;border-radius:9999px;background:#10b981;animation:waveAnim 0.6s ease-in-out infinite alternate}
+.voice-wave:nth-child(1){animation-delay:0s}
+.voice-wave:nth-child(2){animation-delay:0.1s}
+.voice-wave:nth-child(3){animation-delay:0.2s}
+.voice-wave:nth-child(4){animation-delay:0.3s}
+.voice-wave:nth-child(5){animation-delay:0.4s}
+@keyframes waveAnim{0%{height:20%}100%{height:100%}}
+
+/* Snap Button */
+.snap-btn{
+  width:88px;flex-shrink:0;
+  position:relative;
+  border-radius:16px;overflow:hidden;
+  background:#0f172a;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  color:#fff;cursor:pointer;
+  border:none;
+  transition:transform 0.15s;
+}
+.snap-btn:active{transform:scale(0.95)}
+.snap-bg{position:absolute;inset:0;opacity:0.4;background-size:cover;background-position:center;background-image:url('https://images.unsplash.com/photo-1542838132-92c53300491e?w=200&h=200&fit=crop')}
+.snap-overlay{position:absolute;inset:0;background:rgba(0,0,0,0.4);transition:background 0.2s}
+.snap-btn:hover .snap-overlay{background:rgba(0,0,0,0.2)}
+.snap-scanner{position:absolute;left:0;right:0;height:1px;background:#34d399;box-shadow:0 0 12px rgba(16,185,129,1);animation:scanLine 2.5s linear infinite}
+@keyframes scanLine{0%{top:-10%}100%{top:110%}}
+.snap-btn svg{width:24px;height:24px;stroke-width:1.5;position:relative;z-index:2;margin-bottom:6px}
+.snap-label{font-size:9px;font-weight:700;letter-spacing:0.15em;position:relative;z-index:2;color:rgba(255,255,255,0.9)}
+
+/* ── Toast ── */
+.toast{
+  position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-100px);
+  background:rgba(255,255,255,0.85);backdrop-filter:blur(40px);
+  -webkit-backdrop-filter:blur(40px);
+  border:1px solid rgba(255,255,255,0.6);
+  border-radius:16px;padding:12px 20px;
+  box-shadow:0 8px 30px rgba(0,0,0,0.08);
+  font-size:14px;font-weight:500;color:#1e293b;
+  z-index:100;display:flex;align-items:center;gap:8px;
+  transition:transform 0.4s cubic-bezier(0.34,1.56,0.64,1),opacity 0.4s;
+  opacity:0;
+}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+.toast-icon{width:20px;height:20px;color:#10b981}
+</style>
+</head>
+<body>
+
+<!-- Mesh Background -->
+<div class="mesh-bg">
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+  <div class="orb orb3"></div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast">
+  <svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6L9 17l-5-5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  <span id="toast-msg"></span>
+</div>
+
+<!-- App -->
+<div class="app">
+
+  <!-- Header -->
+  <div class="header">
+    <div>
+      <div class="header-date" id="header-date"></div>
+      <h1 class="header-title">Summary</h1>
+    </div>
+    <div class="header-avatar">
+      <img src="https://images.unsplash.com/photo-1510711070725-068a3a878a99?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=200&q=80" alt="Profile" onerror="this.style.display='none'">
+    </div>
+  </div>
+
+  <!-- Dashboard -->
+  <div class="dashboard">
+    <div class="dashboard-inner">
+      <!-- Calorie Ring -->
+      <div class="calorie-ring">
+        <svg viewBox="0 0 100 100">
+          <circle class="track" cx="50" cy="50" r="45"/>
+          <circle class="progress" id="cal-progress" cx="50" cy="50" r="45" stroke-dasharray="283" stroke-dashoffset="283"/>
+        </svg>
+        <div class="calorie-center">
+          <span class="calorie-num" id="cal-num">0</span>
+          <span class="calorie-label">Kcal</span>
+        </div>
+      </div>
+
+      <!-- Macros -->
+      <div class="macros">
+        <div class="macro-row">
+          <div class="macro-header">
+            <span class="macro-name">Protein</span>
+            <span class="macro-val"><strong id="protein-val">0</strong> / 150g</span>
+          </div>
+          <div class="macro-bar protein"><div class="macro-bar-fill" id="protein-bar" style="width:0%"></div></div>
+        </div>
+        <div class="macro-row">
+          <div class="macro-header">
+            <span class="macro-name">Carbs</span>
+            <span class="macro-val"><strong id="carbs-val">0</strong> / 200g</span>
+          </div>
+          <div class="macro-bar carbs"><div class="macro-bar-fill" id="carbs-bar" style="width:0%"></div></div>
+        </div>
+        <div class="macro-row">
+          <div class="macro-header">
+            <span class="macro-name">Fat</span>
+            <span class="macro-val"><strong id="fat-val">0</strong> / 70g</span>
+          </div>
+          <div class="macro-bar fat"><div class="macro-bar-fill" id="fat-bar" style="width:0%"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Logs -->
+  <div class="logs-section">
+    <div class="logs-header">
+      <h2 class="logs-title">Today's Logs</h2>
+      <button class="logs-see-all">See all</button>
+    </div>
+    <div class="logs-list" id="logs-list"></div>
+  </div>
+
+</div>
+
+<!-- Bottom Hotbar -->
+<div class="hotbar-wrap">
+  <div class="hotbar" id="hotbar">
+
+    <!-- Voice Island -->
+    <div class="voice-island hide" id="voice-island">
+      <div class="voice-status">
+        <div class="voice-active-row">
+          <div class="voice-dot">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
+            <div class="voice-dot-pulse"></div>
+          </div>
+          <span class="voice-label">Voice Active</span>
+        </div>
+        <div class="voice-bottom">
+          <span class="voice-transcript" id="voice-transcript">Listening...</span>
+          <div class="voice-waves">
+            <div class="voice-wave"></div>
+            <div class="voice-wave"></div>
+            <div class="voice-wave"></div>
+            <div class="voice-wave"></div>
+            <div class="voice-wave"></div>
+          </div>
+        </div>
+      </div>
+      <button class="snap-btn" id="snap-btn">
+        <div class="snap-bg"></div>
+        <div class="snap-overlay"></div>
+        <div class="snap-scanner"></div>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14.5 4h-5L8 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-4l-1.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+        <span class="snap-label">SNAP</span>
+      </button>
+    </div>
+
+    <!-- Left Side -->
+    <div class="hotbar-side">
+      <button class="hotbar-btn active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
+      </button>
+      <button class="hotbar-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
+      </button>
+    </div>
+
+    <!-- Center Mic Button -->
+    <button class="mic-btn" id="mic-btn">
+      <svg id="mic-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
+      <div id="stop-icon" class="stop-icon" style="display:none"></div>
+    </button>
+
+    <!-- Right Side -->
+    <div class="hotbar-side">
+      <button class="hotbar-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+      </button>
+      <button class="hotbar-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+
+  // ── State ──
+  const CALORIE_GOAL = 2200;
+  const MACRO_GOALS = { protein: 150, carbs: 200, fat: 70 };
+  let logs = [
+    { id:'1', name:'Grilled Chicken Salad', calories:420, time:'12:30 PM', icon:'meal', macros:{protein:45,carbs:12,fat:18}, quality:'green' },
+    { id:'2', name:'Black Coffee', calories:5, time:'8:00 AM', icon:'drink', macros:{protein:0,carbs:1,fat:0}, quality:'green' },
+    { id:'3', name:'Apple & Almonds', calories:210, time:'3:15 PM', icon:'snack', macros:{protein:6,carbs:25,fat:12}, quality:'yellow' },
+  ];
+  let isLogging = false;
+  let voiceTimeouts = [];
+
+  // ── Elements ──
+  const $ = id => document.getElementById(id);
+  const calProgress = $('cal-progress');
+  const calNum = $('cal-num');
+  const proteinVal = $('protein-val');
+  const carbsVal = $('carbs-val');
+  const fatVal = $('fat-val');
+  const proteinBar = $('protein-bar');
+  const carbsBar = $('carbs-bar');
+  const fatBar = $('fat-bar');
+  const logsList = $('logs-list');
+  const micBtn = $('mic-btn');
+  const micIcon = $('mic-icon');
+  const stopIcon = $('stop-icon');
+  const voiceIsland = $('voice-island');
+  const voiceTranscript = $('voice-transcript');
+  const snapBtn = $('snap-btn');
+  const toast = $('toast');
+  const toastMsg = $('toast-msg');
+
+  // ── Date Header ──
+  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  function ordinal(n){ const s=['th','st','nd','rd']; const v=n%100; return n+(s[(v-20)%10]||s[v]||s[0]); }
+  const now = new Date();
+  $('header-date').textContent = `${days[now.getDay()]}, ${months[now.getMonth()]} ${ordinal(now.getDate())}`;
+
+  // ── SVG Icon Templates ──
+  const icons = {
+    meal: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></svg>',
+    snack: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 20.94c1.5 0 2.75 1.06 4 1.06 3 0 6-8 6-12.22A4.91 4.91 0 0 0 17 5c-2.22 0-4 1.44-5 2-1-.56-2.78-2-5-2a4.9 4.9 0 0 0-5 4.78C2 14 5 22 8 22c1.25 0 2.5-1.06 4-1.06Z"/><path d="M10 2c1 .5 2 2 2 5"/></svg>',
+    drink: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 8h1a4 4 0 1 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><line x1="6" y1="2" x2="6" y2="4"/><line x1="10" y1="2" x2="10" y2="4"/><line x1="14" y1="2" x2="14" y2="4"/></svg>',
+  };
+
+  // ── Render ──
+  function render(){
+    const totalCal = logs.reduce((s,l) => s + l.calories, 0);
+    const totalP = logs.reduce((s,l) => s + l.macros.protein, 0);
+    const totalC = logs.reduce((s,l) => s + l.macros.carbs, 0);
+    const totalF = logs.reduce((s,l) => s + l.macros.fat, 0);
+
+    // Calorie ring
+    const pct = Math.min(totalCal / CALORIE_GOAL, 1);
+    const circumference = 283;
+    calProgress.setAttribute('stroke-dashoffset', circumference - circumference * pct);
+    calNum.textContent = totalCal;
+
+    // Macros
+    proteinVal.textContent = totalP;
+    carbsVal.textContent = totalC;
+    fatVal.textContent = totalF;
+    proteinBar.style.width = Math.min(totalP / MACRO_GOALS.protein * 100, 100) + '%';
+    carbsBar.style.width = Math.min(totalC / MACRO_GOALS.carbs * 100, 100) + '%';
+    fatBar.style.width = Math.min(totalF / MACRO_GOALS.fat * 100, 100) + '%';
+
+    // Logs
+    logsList.innerHTML = logs.map(log => `
+      <div class="log-card">
+        <div class="log-left">
+          <div class="log-icon ${log.icon}">${icons[log.icon]}</div>
+          <div class="log-info">
+            <div class="log-name-row">
+              <span class="log-name">${log.name}</span>
+              <div class="quality-dot ${log.quality}"></div>
+            </div>
+            <div class="log-meta">
+              <span class="log-time">${log.time}</span>
+              <div class="log-macros-tag">
+                <span>P:${log.macros.protein}g</span>
+                <span>C:${log.macros.carbs}g</span>
+                <span>F:${log.macros.fat}g</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="log-right">
+          <span class="log-cal">${log.calories}</span>
+          <span class="log-cal-unit">Kcal</span>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // ── Toast ──
+  let toastTimer;
+  function showToast(msg){
+    toastMsg.textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 2500);
+  }
+
+  // ── Voice Logging ──
+  function startLogging(){
+    isLogging = true;
+    micBtn.classList.add('recording');
+    micIcon.style.display = 'none';
+    stopIcon.style.display = 'block';
+    voiceTranscript.textContent = 'Listening...';
+    voiceIsland.classList.remove('hide');
+    voiceIsland.classList.add('show');
+
+    voiceTimeouts.push(setTimeout(() => { voiceTranscript.textContent = 'I had a...'; }, 1000));
+    voiceTimeouts.push(setTimeout(() => { voiceTranscript.textContent = 'I had a protein shake...'; }, 2000));
+    voiceTimeouts.push(setTimeout(() => {
+      if (!isLogging) return;
+      addLog({
+        id: Date.now().toString(),
+        name: 'Protein Shake',
+        calories: 240,
+        time: new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}),
+        icon: 'drink',
+        macros: {protein:30, carbs:15, fat:5},
+        quality: 'green'
+      });
+      showToast('Added Protein Shake');
+      stopLogging();
+    }, 4000));
+  }
+
+  function stopLogging(){
+    isLogging = false;
+    voiceTimeouts.forEach(clearTimeout);
+    voiceTimeouts = [];
+    micBtn.classList.remove('recording');
+    micIcon.style.display = 'block';
+    stopIcon.style.display = 'none';
+    voiceIsland.classList.remove('show');
+    voiceIsland.classList.add('hide');
+  }
+
+  function addLog(log){
+    logs.unshift(log);
+    render();
+  }
+
+  micBtn.addEventListener('click', () => {
+    if (isLogging) stopLogging();
+    else startLogging();
+  });
+
+  // ── Snap Label ──
+  snapBtn.addEventListener('click', () => {
+    stopLogging();
+    setTimeout(() => {
+      addLog({
+        id: Date.now().toString(),
+        name: 'Scanned Nutrition Label',
+        calories: 310,
+        time: new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}),
+        icon: 'snack',
+        macros: {protein:12, carbs:40, fat:8},
+        quality: 'yellow'
+      });
+      showToast('Label scanned & logged');
+    }, 400);
+  });
+
+  // ── Init ──
+  render();
+  // Animate initial calorie ring on load
+  calProgress.setAttribute('stroke-dashoffset', '283');
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => render());
+  });
+})();
+</script>
+</body>
+</html>
