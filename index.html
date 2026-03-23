@@ -1027,7 +1027,31 @@ body{position:relative;overflow-x:hidden}
   // ── Claude Food Analysis ──
   async function analyzeWithClaude(text, imageBase64) {
     try {
-      const prompt = `Break down this food into INDIVIDUAL ingredients with USDA nutrition data. Return ONLY a valid JSON array, no markdown fences.\n\nFormat: [{"name":"Ingredient Name","amount_g":NUMBER,"unit":"g|ml","calories_per_100":NUMBER,"protein_per_100":NUMBER,"carbs_per_100":NUMBER,"fat_per_100":NUMBER,"icon":"meal|snack|drink","quality":"green|yellow|red"}]\n\nRules:\n- If no food or drink is mentioned/visible, return an empty array: []\n- Each ingredient is a separate item in the array\n- "amount_g" is the total amount in grams (or ml for liquids) the person consumed\n- All nutrition values are PER 100g (or 100ml) based on USDA FoodData Central\n- "unit" is "g" for solids, "ml" for liquids\n- For countable items: use standard USDA weight (e.g. 1 large egg = 50g, so 3 eggs = 150g)\n- Quality: green=healthy/whole foods, yellow=moderate, red=junk/high-sugar\n- Icon: meal=main meals/proteins, snack=snacks/fruits/bars, drink=beverages\n${text ? `\nVoice transcript: "${text}"` : ''}${imageBase64 ? '\nA photo of the food/label is also attached. Use both the voice description and the image to extract nutrition info. If a nutrition label is visible, prioritize the label data.' : ''}`;
+      let context = '';
+      if (text && imageBase64) {
+        context = `The user said: "${text}"\nThey also took a photo of the food or its nutrition label. Use BOTH the voice description and the photo together. The voice may specify quantities (e.g. "100g of this") — apply that to what you see in the image/label.`;
+      } else if (imageBase64) {
+        context = 'The user took a photo of food or a nutrition label. Extract the nutrition info from what you see.';
+      } else if (text) {
+        context = `The user said: "${text}"`;
+      }
+
+      const prompt = `You are a nutrition analyzer. ${context}
+
+Break down into INDIVIDUAL food items. Return ONLY a valid JSON array, no markdown.
+
+Format: [{"name":"Item Name","amount_g":NUMBER,"unit":"g|ml","calories":NUMBER,"protein":NUMBER,"carbs":NUMBER,"fat":NUMBER,"icon":"meal|snack|drink","quality":"green|yellow|red"}]
+
+Rules:
+- If NO food is mentioned or visible, return: []
+- "amount_g" = total grams (or ml) consumed
+- "calories/protein/carbs/fat" = TOTAL for the amount consumed (not per 100g)
+- Use USDA nutrition data for accuracy
+- If a nutrition label is visible in the photo, read the exact values from it
+- If the user specifies an amount (e.g. "100g of this"), use that amount
+- For countable items: 1 large egg ≈ 50g, 1 chicken sausage ≈ 85g, etc.
+- "icon": meal=main food, snack=snacks/fruits, drink=beverages
+- "quality": green=healthy, yellow=moderate, red=junk`;
 
       const content = [];
       if (imageBase64) {
@@ -1059,30 +1083,29 @@ body{position:relative;overflow-x:hidden}
       let raw = data.content[0].text.replace(/```json?\s*/g, '').replace(/```\s*/g, '').trim();
       const items = JSON.parse(raw);
       const arr = Array.isArray(items) ? items : [items];
-      const filtered = arr.filter(item => item.name && item.calories_per_100 > 0);
+      const filtered = arr.filter(item => item.name && (item.calories > 0 || item.protein > 0));
       if (filtered.length === 0) { showToast('No food detected'); resetMicUI(); return; }
       const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
       filtered.forEach((item, i) => {
         const amt = item.amount_g || 100;
-        const factor = amt / 100;
+        const cal = item.calories || 0;
+        const p = item.protein || 0;
+        const c = item.carbs || 0;
+        const f = item.fat || 0;
         addLog({
           id: (Date.now() + i).toString(),
           name: item.name,
           amount: amt,
           unit: item.unit || 'g',
-          calPer100: item.calories_per_100 || 0,
-          proteinPer100: item.protein_per_100 || 0,
-          carbsPer100: item.carbs_per_100 || 0,
-          fatPer100: item.fat_per_100 || 0,
-          calories: Math.round((item.calories_per_100 || 0) * factor),
+          calPer100: amt > 0 ? Math.round(cal / amt * 100) : cal,
+          proteinPer100: amt > 0 ? Math.round(p / amt * 100 * 10) / 10 : p,
+          carbsPer100: amt > 0 ? Math.round(c / amt * 100 * 10) / 10 : c,
+          fatPer100: amt > 0 ? Math.round(f / amt * 100 * 10) / 10 : f,
+          calories: Math.round(cal),
           time: timeStr,
           icon: ['meal','snack','drink'].includes(item.icon) ? item.icon : 'meal',
-          macros: {
-            protein: Math.round((item.protein_per_100 || 0) * factor),
-            carbs: Math.round((item.carbs_per_100 || 0) * factor),
-            fat: Math.round((item.fat_per_100 || 0) * factor)
-          },
+          macros: { protein: Math.round(p), carbs: Math.round(c), fat: Math.round(f) },
           quality: ['green','yellow','red'].includes(item.quality) ? item.quality : 'yellow'
         });
       });
