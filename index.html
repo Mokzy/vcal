@@ -634,12 +634,13 @@ body{position:relative;overflow-x:hidden}
       <button class="edit-close" id="edit-close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     </div>
     <div class="edit-servings">
-      <span class="edit-servings-label">Servings</span>
+      <span class="edit-servings-label">Amount</span>
       <div class="edit-servings-ctrl">
         <button class="edit-servings-btn" id="edit-minus">−</button>
-        <span class="edit-servings-num" id="edit-servings-num">1</span>
+        <input type="number" class="settings-input" id="edit-amount-input" style="width:80px;text-align:center;padding:8px;font-size:16px;font-weight:700" min="1">
         <button class="edit-servings-btn" id="edit-plus">+</button>
       </div>
+      <span id="edit-unit" style="font-size:14px;font-weight:600;color:#64748b">g</span>
     </div>
     <div id="edit-macros">
       <div class="edit-row"><span class="edit-label">Calories</span><span class="edit-value" id="edit-cal">0</span></div>
@@ -688,7 +689,6 @@ body{position:relative;overflow-x:hidden}
   let analyserNode = null;
   let animFrameId = null;
   let editingLogId = null;
-  let editServings = 1;
 
   // ── Elements ──
   const $ = id => document.getElementById(id);
@@ -809,7 +809,7 @@ body{position:relative;overflow-x:hidden}
           <div class="log-icon ${log.icon}">${icons[log.icon] || icons.meal}</div>
           <div class="log-info">
             <div class="log-name-row">
-              <span class="log-name">${log.name}</span>${(log.servings && log.servings > 1) ? `<span class="log-serving">×${log.servings}</span>` : ''}
+              <span class="log-name">${log.name}</span>${log.amount ? `<span class="log-serving">${log.amount}${log.unit || 'g'}</span>` : ''}
               <div class="quality-dot ${log.quality}"></div>
             </div>
             <div class="log-meta">
@@ -834,6 +834,8 @@ body{position:relative;overflow-x:hidden}
       card.addEventListener('touchstart', e => {
         startX = e.touches[0].clientX; currentX = 0; swiping = false;
         card.style.animation = 'none';
+        card.style.opacity = '1';
+        card.style.transform = 'none';
       }, { passive: true });
       card.addEventListener('touchmove', e => {
         const dx = e.touches[0].clientX - startX;
@@ -1016,7 +1018,7 @@ body{position:relative;overflow-x:hidden}
         body: JSON.stringify({
           model: 'claude-sonnet-4-20250514',
           max_tokens: 1024,
-          messages: [{ role: 'user', content: `Break down this food log entry into INDIVIDUAL ingredients. Use USDA FoodData Central nutrition values per single serving. Return ONLY a valid JSON array, no markdown fences.\n\nFormat: [{"name":"Ingredient Name","servings":NUMBER,"calories_per_serving":NUMBER,"protein_per_serving":NUMBER,"carbs_per_serving":NUMBER,"fat_per_serving":NUMBER,"icon":"meal|snack|drink","quality":"green|yellow|red"}]\n\nRules:\n- If the text does NOT mention any food or drink, return an empty array: []\n- Each ingredient is a separate item in the array\n- "servings" is how many of that item (e.g. "3 eggs" = name:"Egg", servings:3)\n- Nutrition values are PER SINGLE SERVING based on USDA standard portions\n- calories_per_serving, protein/carbs/fat_per_serving are per 1 serving\n- Quality: green=healthy/whole foods, yellow=moderate, red=junk/high-sugar\n- Icon: meal=main meals/proteins, snack=snacks/fruits/bars, drink=beverages\n\nEntry: "${text}"` }]
+          messages: [{ role: 'user', content: `Break down this food log entry into INDIVIDUAL ingredients with USDA nutrition data. Return ONLY a valid JSON array, no markdown fences.\n\nFormat: [{"name":"Ingredient Name","amount_g":NUMBER,"unit":"g|ml","calories_per_100":NUMBER,"protein_per_100":NUMBER,"carbs_per_100":NUMBER,"fat_per_100":NUMBER,"icon":"meal|snack|drink","quality":"green|yellow|red"}]\n\nRules:\n- If the text does NOT mention any food or drink, return an empty array: []\n- Each ingredient is a separate item in the array\n- "amount_g" is the total amount in grams (or ml for liquids) the person consumed\n- All nutrition values are PER 100g (or 100ml) based on USDA FoodData Central\n- "unit" is "g" for solids, "ml" for liquids\n- For countable items: use standard USDA weight (e.g. 1 large egg = 50g, so 3 eggs = 150g)\n- Quality: green=healthy/whole foods, yellow=moderate, red=junk/high-sugar\n- Icon: meal=main meals/proteins, snack=snacks/fruits/bars, drink=beverages\n\nEntry: "${text}"` }]
         })
       });
 
@@ -1029,27 +1031,29 @@ body{position:relative;overflow-x:hidden}
       let raw = data.content[0].text.replace(/```json?\s*/g, '').replace(/```\s*/g, '').trim();
       const items = JSON.parse(raw);
       const arr = Array.isArray(items) ? items : [items];
-      const filtered = arr.filter(item => item.name && item.calories_per_serving > 0);
+      const filtered = arr.filter(item => item.name && item.calories_per_100 > 0);
       if (filtered.length === 0) { showToast('No food detected'); resetMicUI(); return; }
       const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
       filtered.forEach((item, i) => {
-        const s = item.servings || 1;
+        const amt = item.amount_g || 100;
+        const factor = amt / 100;
         addLog({
           id: (Date.now() + i).toString(),
           name: item.name,
-          servings: s,
-          caloriesPerServing: item.calories_per_serving || 0,
-          proteinPerServing: item.protein_per_serving || 0,
-          carbsPerServing: item.carbs_per_serving || 0,
-          fatPerServing: item.fat_per_serving || 0,
-          calories: Math.round((item.calories_per_serving || 0) * s),
+          amount: amt,
+          unit: item.unit || 'g',
+          calPer100: item.calories_per_100 || 0,
+          proteinPer100: item.protein_per_100 || 0,
+          carbsPer100: item.carbs_per_100 || 0,
+          fatPer100: item.fat_per_100 || 0,
+          calories: Math.round((item.calories_per_100 || 0) * factor),
           time: timeStr,
           icon: ['meal','snack','drink'].includes(item.icon) ? item.icon : 'meal',
           macros: {
-            protein: Math.round((item.protein_per_serving || 0) * s),
-            carbs: Math.round((item.carbs_per_serving || 0) * s),
-            fat: Math.round((item.fat_per_serving || 0) * s)
+            protein: Math.round((item.protein_per_100 || 0) * factor),
+            carbs: Math.round((item.carbs_per_100 || 0) * factor),
+            fat: Math.round((item.fat_per_100 || 0) * factor)
           },
           quality: ['green','yellow','red'].includes(item.quality) ? item.quality : 'yellow'
         });
@@ -1071,49 +1075,67 @@ body{position:relative;overflow-x:hidden}
 
   // ── Edit Modal ──
   const editOverlay = $('edit-overlay');
+  const editAmountInput = $('edit-amount-input');
+  let editAmount = 100;
+
   function openEditModal(logId) {
     const log = logs.find(l => l.id === logId);
     if (!log) return;
     editingLogId = logId;
-    editServings = log.servings || 1;
+    editAmount = log.amount || 100;
     $('edit-name').textContent = log.name;
+    $('edit-unit').textContent = log.unit || 'g';
+    editAmountInput.value = editAmount;
     updateEditDisplay(log);
     editOverlay.classList.add('active');
+  }
+  function getPerUnit(log) {
+    // per-100 values, or derive from stored totals
+    const c = log.calPer100 || (log.calories / (log.amount || 100)) * 100;
+    const p = log.proteinPer100 || (log.macros.protein / (log.amount || 100)) * 100;
+    const cb = log.carbsPer100 || (log.macros.carbs / (log.amount || 100)) * 100;
+    const f = log.fatPer100 || (log.macros.fat / (log.amount || 100)) * 100;
+    return { c, p, cb, f };
   }
   function updateEditDisplay(log) {
     if (!log) log = logs.find(l => l.id === editingLogId);
     if (!log) return;
-    const cps = log.caloriesPerServing || log.calories / (log.servings || 1);
-    const pps = log.proteinPerServing || log.macros.protein / (log.servings || 1);
-    const cpps = log.carbsPerServing || log.macros.carbs / (log.servings || 1);
-    const fps = log.fatPerServing || log.macros.fat / (log.servings || 1);
-    $('edit-servings-num').textContent = editServings;
-    $('edit-cal').textContent = Math.round(cps * editServings);
-    $('edit-protein').textContent = Math.round(pps * editServings) + 'g';
-    $('edit-carbs').textContent = Math.round(cpps * editServings) + 'g';
-    $('edit-fat').textContent = Math.round(fps * editServings) + 'g';
+    const { c, p, cb, f } = getPerUnit(log);
+    const factor = editAmount / 100;
+    $('edit-cal').textContent = Math.round(c * factor);
+    $('edit-protein').textContent = Math.round(p * factor) + 'g';
+    $('edit-carbs').textContent = Math.round(cb * factor) + 'g';
+    $('edit-fat').textContent = Math.round(f * factor) + 'g';
   }
   function closeEditModal() { editOverlay.classList.remove('active'); editingLogId = null; }
   $('edit-close').onclick = closeEditModal;
   editOverlay.onclick = e => { if (e.target === editOverlay) closeEditModal(); };
+  editAmountInput.addEventListener('input', () => {
+    editAmount = Math.max(0, parseInt(editAmountInput.value) || 0);
+    updateEditDisplay();
+  });
   $('edit-minus').onclick = () => {
-    if (editServings > 0.5) { editServings = Math.round((editServings - 0.5) * 10) / 10; updateEditDisplay(); }
+    const step = editAmount >= 100 ? 50 : (editAmount >= 10 ? 10 : 1);
+    editAmount = Math.max(1, editAmount - step);
+    editAmountInput.value = editAmount;
+    updateEditDisplay();
   };
   $('edit-plus').onclick = () => {
-    editServings = Math.round((editServings + 0.5) * 10) / 10; updateEditDisplay();
+    const step = editAmount >= 100 ? 50 : (editAmount >= 10 ? 10 : 1);
+    editAmount += step;
+    editAmountInput.value = editAmount;
+    updateEditDisplay();
   };
   $('edit-save').onclick = () => {
     const log = logs.find(l => l.id === editingLogId);
     if (!log) return;
-    const cps = log.caloriesPerServing || log.calories / (log.servings || 1);
-    const pps = log.proteinPerServing || log.macros.protein / (log.servings || 1);
-    const cpps = log.carbsPerServing || log.macros.carbs / (log.servings || 1);
-    const fps = log.fatPerServing || log.macros.fat / (log.servings || 1);
-    log.servings = editServings;
-    log.calories = Math.round(cps * editServings);
-    log.macros.protein = Math.round(pps * editServings);
-    log.macros.carbs = Math.round(cpps * editServings);
-    log.macros.fat = Math.round(fps * editServings);
+    const { c, p, cb, f } = getPerUnit(log);
+    const factor = editAmount / 100;
+    log.amount = editAmount;
+    log.calories = Math.round(c * factor);
+    log.macros.protein = Math.round(p * factor);
+    log.macros.carbs = Math.round(cb * factor);
+    log.macros.fat = Math.round(f * factor);
     saveLogs(); render(); closeEditModal();
     showToast('Updated ' + log.name);
   };
@@ -1172,7 +1194,7 @@ body{position:relative;overflow-x:hidden}
           max_tokens: 300,
           messages: [{ role: 'user', content: [
             { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: base64 } },
-            { type: 'text', text: 'Extract nutrition info from this food or nutrition label. Break into individual ingredients if multiple items visible. Use USDA FoodData Central values. Return ONLY a valid JSON array, no markdown fences.\n\nFormat: [{"name":"Food Name","servings":NUMBER,"calories_per_serving":NUMBER,"protein_per_serving":NUMBER,"carbs_per_serving":NUMBER,"fat_per_serving":NUMBER,"icon":"meal|snack|drink","quality":"green|yellow|red"}]\n\nNutrition values are PER SINGLE SERVING. If a nutrition label shows serving size, use that. If no label visible, estimate from the food shown.' }
+            { type: 'text', text: 'Extract nutrition info from this food or nutrition label. Break into individual ingredients if multiple items visible. Use USDA FoodData Central values. Return ONLY a valid JSON array, no markdown fences.\n\nFormat: [{"name":"Food Name","amount_g":NUMBER,"unit":"g|ml","calories_per_100":NUMBER,"protein_per_100":NUMBER,"carbs_per_100":NUMBER,"fat_per_100":NUMBER,"icon":"meal|snack|drink","quality":"green|yellow|red"}]\n\nAll nutrition values are PER 100g/100ml. "amount_g" is total grams/ml consumed. If a nutrition label shows serving size, convert to grams. If no label visible, estimate from the food shown.' }
           ] }]
         })
       });
@@ -1188,28 +1210,33 @@ body{position:relative;overflow-x:hidden}
       const arr = Array.isArray(items) ? items : [items];
       const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-      arr.forEach((item, i) => {
-        const s = item.servings || 1;
+      const filtered = arr.filter(item => item.name && item.calories_per_100 > 0);
+      if (filtered.length === 0) { showToast('Could not read label'); return; }
+
+      filtered.forEach((item, i) => {
+        const amt = item.amount_g || 100;
+        const factor = amt / 100;
         addLog({
           id: (Date.now() + i).toString(),
-          name: item.name || 'Scanned Label',
-          servings: s,
-          caloriesPerServing: item.calories_per_serving || 0,
-          proteinPerServing: item.protein_per_serving || 0,
-          carbsPerServing: item.carbs_per_serving || 0,
-          fatPerServing: item.fat_per_serving || 0,
-          calories: Math.round((item.calories_per_serving || 0) * s),
+          name: item.name,
+          amount: amt,
+          unit: item.unit || 'g',
+          calPer100: item.calories_per_100 || 0,
+          proteinPer100: item.protein_per_100 || 0,
+          carbsPer100: item.carbs_per_100 || 0,
+          fatPer100: item.fat_per_100 || 0,
+          calories: Math.round((item.calories_per_100 || 0) * factor),
           time: timeStr,
           icon: ['meal','snack','drink'].includes(item.icon) ? item.icon : 'snack',
           macros: {
-            protein: Math.round((item.protein_per_serving || 0) * s),
-            carbs: Math.round((item.carbs_per_serving || 0) * s),
-            fat: Math.round((item.fat_per_serving || 0) * s)
+            protein: Math.round((item.protein_per_100 || 0) * factor),
+            carbs: Math.round((item.carbs_per_100 || 0) * factor),
+            fat: Math.round((item.fat_per_100 || 0) * factor)
           },
           quality: ['green','yellow','red'].includes(item.quality) ? item.quality : 'yellow'
         });
       });
-      showToast(`Added ${arr.length} item${arr.length > 1 ? 's' : ''}`);
+      showToast(`Added ${filtered.length} item${filtered.length > 1 ? 's' : ''}`);
     } catch (err) {
       console.error('Vision parse error:', err);
       showToast('Could not parse label');
