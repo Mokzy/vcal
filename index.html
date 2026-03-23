@@ -418,10 +418,22 @@ body{position:relative;overflow-x:hidden}
 
 /* ── Serving badge on log cards ── */
 .log-serving{font-size:11px;font-weight:600;color:#10b981;margin-left:4px}
-.log-card{cursor:pointer;touch-action:pan-y;user-select:none}
+.log-card{cursor:pointer;touch-action:pan-y;user-select:none;position:relative;z-index:1}
 .log-card:active{transform:scale(0.98)}
 .log-card.swiping{animation:none!important;transition:none!important}
 .log-card.dismissed{animation:none!important;transition:transform 0.3s ease-out,opacity 0.3s ease-out!important}
+.log-card-wrap{position:relative;overflow:hidden;border-radius:24px}
+.log-delete-bg{
+  position:absolute;inset:0;border-radius:24px;
+  background:rgba(244,63,94,0.12);
+  display:flex;align-items:center;padding:0 24px;
+  color:#f43f5e;font-size:13px;font-weight:600;
+  opacity:0;transition:opacity 0.15s;
+}
+.log-delete-bg.show{opacity:1}
+.log-delete-bg.from-left{justify-content:flex-start}
+.log-delete-bg.from-right{justify-content:flex-end}
+.log-delete-bg svg{width:20px;height:20px;stroke-width:1.5;margin-right:6px;flex-shrink:0}
 </style>
 </head>
 <body>
@@ -804,6 +816,8 @@ body{position:relative;overflow-x:hidden}
       return;
     }
     logsList.innerHTML = logs.map(log => `
+      <div class="log-card-wrap">
+      <div class="log-delete-bg" id="del-bg-${log.id}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>Delete</div>
       <div class="log-card" data-id="${log.id}">
         <div class="log-left">
           <div class="log-icon ${log.icon}">${icons[log.icon] || icons.meal}</div>
@@ -827,10 +841,12 @@ body{position:relative;overflow-x:hidden}
           <span class="log-cal-unit">Kcal</span>
         </div>
       </div>
+      </div>
     `).join('');
     // Attach click + swipe handlers
     logsList.querySelectorAll('.log-card[data-id]').forEach(card => {
       let startX = 0, currentX = 0, swiping = false;
+      const delBg = $('del-bg-' + card.dataset.id);
       card.addEventListener('touchstart', e => {
         startX = e.touches[0].clientX; currentX = 0; swiping = false;
         card.style.animation = 'none';
@@ -844,7 +860,12 @@ body{position:relative;overflow-x:hidden}
           currentX = dx;
           card.classList.add('swiping');
           card.style.transform = `translateX(${dx}px)`;
-          card.style.opacity = Math.max(0, 1 - Math.abs(dx) / 200);
+          card.style.opacity = Math.max(0.2, 1 - Math.abs(dx) / 250);
+          if (delBg) {
+            delBg.classList.toggle('show', Math.abs(dx) > 30);
+            delBg.classList.toggle('from-left', dx > 0);
+            delBg.classList.toggle('from-right', dx < 0);
+          }
         }
       }, { passive: true });
       card.addEventListener('touchend', () => {
@@ -861,6 +882,7 @@ body{position:relative;overflow-x:hidden}
         } else {
           card.style.transform = '';
           card.style.opacity = '';
+          if (delBg) { delBg.classList.remove('show','from-left','from-right'); }
           if (!swiping) openEditModal(card.dataset.id);
         }
         swiping = false; currentX = 0;
