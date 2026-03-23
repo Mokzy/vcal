@@ -1085,26 +1085,43 @@ body{position:relative;overflow-x:hidden}
       const hasImages = images && images.length > 0;
       let context = '';
       if (text && hasImages) {
-        context = `The user scanned ${images.length} nutrition label(s) from products they used, then described their meal: "${text}"\n\nIMPORTANT: Read the EXACT nutrition values from each label photo. The voice description tells you HOW MUCH of each product was used. Match each label to the description and calculate the actual macros for the amounts consumed.`;
+        context = `The user scanned ${images.length} nutrition label(s) from products they used to cook, then described their meal: "${text}"
+
+CRITICAL INSTRUCTIONS:
+1. For EACH scanned label photo, carefully READ the nutrition facts table printed on the packaging
+2. Extract the EXACT values as printed: serving size, calories, protein, carbs, fat
+3. Note the product name from the packaging
+4. The user's voice description tells you HOW MUCH of each product they used (e.g. "one pack", "half the packet", "200g", "2 tablespoons")
+5. Match each voice-mentioned product to the corresponding scanned label
+6. Calculate the final macros: (amount used / serving size on label) × nutrition per serving
+7. If the user says "one pack" or "the whole thing", use the total package size from the label
+8. If the user says "one portion" or "one serving", use the serving size printed on the label`;
       } else if (hasImages) {
-        context = `The user scanned ${images.length} nutrition label(s). Read the exact nutrition values from each label and log them.`;
+        context = `The user scanned ${images.length} nutrition label(s).
+
+CRITICAL INSTRUCTIONS:
+1. For EACH label photo, carefully READ the nutrition facts table printed on the packaging
+2. Extract the EXACT values as printed: serving size, calories, protein, carbs, fat per serving
+3. Use the product name from the packaging
+4. Since no amount was specified, use exactly ONE SERVING as defined on the label
+5. "amount_g" should be the serving size in grams as printed on the label`;
       } else if (text) {
-        context = `The user said: "${text}"`;
+        context = `The user described what they ate: "${text}"
+Use USDA FoodData Central values to estimate nutrition.`;
       }
 
-      const prompt = `You are a nutrition analyzer. ${context}
+      const prompt = `You are a nutrition label reader and food analyzer. ${context}
 
-Break down into INDIVIDUAL food items. Return ONLY a valid JSON array, no markdown.
+Return ONLY a valid JSON array, no markdown. One entry per product/ingredient.
 
 Format: [{"name":"Product Name","amount_g":NUMBER,"unit":"g|ml","calories":NUMBER,"protein":NUMBER,"carbs":NUMBER,"fat":NUMBER,"icon":"meal|snack|drink","quality":"green|yellow|red"}]
 
 Rules:
 - If NO food is mentioned or visible, return: []
-- READ nutrition labels carefully — extract calories, protein, carbs, fat per serving/per 100g as shown
-- "amount_g" = the amount the user actually consumed (from their voice description, or the serving size on the label)
-- "calories/protein/carbs/fat" = TOTAL macros for the amount consumed
-- If the user says "I used 200g of the pasta", calculate macros for 200g based on the label's per-100g values
-- If no amount specified, use one serving as shown on the label
+- "name" = the actual product name as shown on the label, or the food name
+- "amount_g" = grams (or ml) the user actually consumed
+- "calories/protein/carbs/fat" = TOTAL macros for that amount consumed
+- NEVER guess or use generic database values when a nutrition label is visible — READ the label
 - "icon": meal=main food, snack=snacks/fruits, drink=beverages
 - "quality": green=healthy, yellow=moderate, red=junk`;
 
