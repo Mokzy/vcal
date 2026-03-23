@@ -167,7 +167,7 @@ body{position:relative;overflow-x:hidden}
 .hotbar-btn:hover,.hotbar-btn.active{color:#1e293b}
 .hotbar-btn svg{width:24px;height:24px;stroke-width:1.5}
 
-/* Center Mic Button */
+/* Center Log Button */
 .mic-btn{
   position:absolute;left:50%;top:-24px;transform:translateX(-50%);
   width:72px;height:72px;border-radius:50%;
@@ -181,10 +181,15 @@ body{position:relative;overflow-x:hidden}
 }
 .mic-btn:hover{transform:translateX(-50%) scale(1.05)}
 .mic-btn:active{transform:translateX(-50%) scale(0.95)}
-.mic-btn.recording{
+.mic-btn.scanning{
   background:linear-gradient(to top right,#059669,#34d399);
   border-color:rgba(16,185,129,0.5);
   box-shadow:0 0 40px rgba(16,185,129,0.4),0 8px 32px rgba(0,0,0,0.2);
+}
+.mic-btn.recording{
+  background:linear-gradient(to top right,#dc2626,#f87171);
+  border-color:rgba(239,68,68,0.5);
+  box-shadow:0 0 40px rgba(239,68,68,0.4),0 8px 32px rgba(0,0,0,0.2);
 }
 .mic-btn svg{width:28px;height:28px;stroke-width:1.5}
 .stop-icon{width:16px;height:16px;border-radius:3px;background:#fff}
@@ -214,12 +219,13 @@ body{position:relative;overflow-x:hidden}
 .island-step{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#94a3b8;padding:4px 4px 0}
 
 /* ── Scan Mode ── */
-.scan-area{display:flex;gap:10px;align-items:stretch;min-height:96px}
+.scan-area{display:flex;gap:10px;align-items:stretch}
 .scan-preview{
-  flex:1;position:relative;border-radius:16px;overflow:hidden;
+  width:100%;position:relative;border-radius:16px;overflow:hidden;
   background:#0f172a;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  aspect-ratio:4/3;
 }
-.scan-preview video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0.7}
+.scan-preview video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .scan-preview:active{opacity:0.9}
 .scan-hint{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;gap:4px;pointer-events:none;color:#fff}
 .scan-hint svg{width:28px;height:28px;stroke-width:1.5}
@@ -239,15 +245,6 @@ body{position:relative;overflow-x:hidden}
 }
 .scan-count{font-size:11px;font-weight:600;color:#64748b;display:flex;align-items:center}
 
-/* Done button */
-.scan-done{
-  padding:10px;border:none;border-radius:14px;
-  background:#10b981;color:#fff;font-size:13px;font-weight:600;
-  font-family:inherit;cursor:pointer;width:100%;
-  box-shadow:0 4px 16px rgba(16,185,129,0.2);transition:transform 0.15s;
-}
-.scan-done:active{transform:scale(0.98)}
-.scan-done:disabled{background:#94a3b8;box-shadow:none;cursor:default}
 
 /* ── Voice Mode ── */
 .voice-area{display:flex;gap:10px;align-items:stretch}
@@ -565,7 +562,6 @@ body{position:relative;overflow-x:hidden}
           </div>
         </div>
         <div class="scan-thumbs" id="scan-thumbs"></div>
-        <button class="scan-done" id="scan-done">Done → Describe your meal</button>
       </div>
 
       <!-- Step 2: Voice Record -->
@@ -606,9 +602,10 @@ body{position:relative;overflow-x:hidden}
       </button>
     </div>
 
-    <!-- Center Mic Button -->
+    <!-- Center Log Button -->
     <button class="mic-btn" id="mic-btn">
-      <svg id="mic-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
+      <svg id="mic-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      <svg id="mic-icon-voice" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="display:none"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
       <div id="stop-icon" class="stop-icon" style="display:none"></div>
     </button>
 
@@ -920,8 +917,9 @@ body{position:relative;overflow-x:hidden}
   }
 
   // ── Island State ──
-  let islandMode = 'scan'; // 'scan' | 'voice'
-  let scannedLabels = []; // array of base64 strings
+  // Button states: 'idle' → 'scanning' → 'recording'
+  let islandMode = 'idle';
+  let scannedLabels = [];
   const islandScan = $('island-scan');
   const islandVoice = $('island-voice');
   const scanPreview = $('scan-preview');
@@ -929,7 +927,8 @@ body{position:relative;overflow-x:hidden}
   const scanThumbs = $('scan-thumbs');
   const voiceThumbs = $('voice-thumbs');
   const scanFlash = $('scan-flash');
-  const scanDone = $('scan-done');
+  const micIconPlus = $('mic-icon');
+  const micIconVoice = $('mic-icon-voice');
 
   // ── Island Camera ──
   async function startIslandCam() {
@@ -953,7 +952,6 @@ body{position:relative;overflow-x:hidden}
     canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
     const b64 = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
     scannedLabels.push(b64);
-    // Flash effect
     scanFlash.classList.add('flash');
     setTimeout(() => scanFlash.classList.remove('flash'), 150);
     renderScanThumbs();
@@ -970,47 +968,45 @@ body{position:relative;overflow-x:hidden}
 
   scanPreview.onclick = () => captureLabel();
 
-  // ── Step transitions ──
-  function showScanMode() {
-    islandMode = 'scan';
-    islandScan.style.display = '';
-    islandVoice.style.display = 'none';
-  }
-  function showVoiceMode() {
-    islandMode = 'voice';
-    islandScan.style.display = 'none';
-    islandVoice.style.display = '';
-    // Show label thumbs in voice mode
-    voiceThumbs.innerHTML = scannedLabels.map(b64 =>
-      `<img src="data:image/jpeg;base64,${b64}" alt="label">`
-    ).join('');
+  // ── Button icon helpers ──
+  function showBtnIcon(mode) {
+    micIconPlus.style.display = mode === 'idle' ? '' : 'none';
+    micIconVoice.style.display = mode === 'scanning' ? '' : 'none';
+    stopIcon.style.display = mode === 'recording' ? 'block' : 'none';
   }
 
-  scanDone.onclick = async () => {
-    stopIslandCam();
-    showVoiceMode();
-    // Start voice recording
-    await startVoiceRecording();
-  };
-
-  // ── Mic button: opens scan mode ──
-  async function startLogging() {
+  // ── State: idle → scanning (tap +) ──
+  async function enterScanMode() {
     if (!settings.anthropicKey) { showToast('Set Anthropic API key in Settings'); switchView('settings'); return; }
     if (!settings.openaiKey) { showToast('Set OpenAI API key in Settings'); switchView('settings'); return; }
 
+    islandMode = 'scanning';
     scannedLabels = [];
     renderScanThumbs();
-    showScanMode();
+    islandScan.style.display = '';
+    islandVoice.style.display = 'none';
     voiceIsland.classList.remove('hide');
     voiceIsland.classList.add('show');
-    micBtn.classList.add('recording');
-    micIcon.style.display = 'none';
-    stopIcon.style.display = 'block';
+    micBtn.classList.remove('recording');
+    micBtn.classList.add('scanning');
+    showBtnIcon('scanning');
     isLogging = true;
     await startIslandCam();
   }
 
-  async function startVoiceRecording() {
+  // ── State: scanning → recording (tap mic icon) ──
+  async function enterVoiceMode() {
+    stopIslandCam();
+    islandMode = 'recording';
+    islandScan.style.display = 'none';
+    islandVoice.style.display = '';
+    voiceThumbs.innerHTML = scannedLabels.map(b64 =>
+      `<img src="data:image/jpeg;base64,${b64}" alt="label">`
+    ).join('');
+    micBtn.classList.remove('scanning');
+    micBtn.classList.add('recording');
+    showBtnIcon('recording');
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       audioChunks = [];
@@ -1036,20 +1032,8 @@ body{position:relative;overflow-x:hidden}
     }
   }
 
-  function stopLogging() {
-    if (!isLogging) return;
-    isLogging = false;
-    stopIslandCam();
-    if (islandMode === 'scan') {
-      // User stopped during scan mode without recording — skip to voice if they have labels
-      if (scannedLabels.length > 0) {
-        showVoiceMode();
-        startVoiceRecording();
-        isLogging = true;
-        return;
-      }
-      resetMicUI(); return;
-    }
+  // ── State: recording → done (tap stop) ──
+  function stopRecording() {
     if (mediaRecorder && mediaRecorder.state === 'recording') {
       mediaRecorder.stop();
     } else {
@@ -1060,9 +1044,9 @@ body{position:relative;overflow-x:hidden}
   function resetMicUI() {
     isLogging = false;
     isProcessing = false;
-    micBtn.classList.remove('recording', 'processing');
-    micIcon.style.display = 'block';
-    stopIcon.style.display = 'none';
+    islandMode = 'idle';
+    micBtn.classList.remove('recording', 'scanning', 'processing');
+    showBtnIcon('idle');
     voiceIsland.classList.remove('show');
     voiceIsland.classList.add('hide');
     stopIslandCam();
@@ -1070,10 +1054,9 @@ body{position:relative;overflow-x:hidden}
 
   async function transcribeAndAnalyze() {
     isProcessing = true;
-    micBtn.classList.remove('recording');
+    micBtn.classList.remove('recording', 'scanning');
     micBtn.classList.add('processing');
-    micIcon.style.display = 'block';
-    stopIcon.style.display = 'none';
+    showBtnIcon('idle');
 
     let transcript = '';
 
@@ -1208,8 +1191,9 @@ Rules:
 
   micBtn.addEventListener('click', () => {
     if (isProcessing) return;
-    if (isLogging) stopLogging();
-    else startLogging();
+    if (islandMode === 'idle') enterScanMode();
+    else if (islandMode === 'scanning') enterVoiceMode();
+    else if (islandMode === 'recording') stopRecording();
   });
 
   // ── Edit Modal ──

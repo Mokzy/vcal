@@ -1,4 +1,4 @@
-const CACHE_NAME = 'vcal-v13';
+const CACHE_NAME = 'vcal-v14';
 const ASSETS = ['./', 'index.html', 'manifest.json'];
 
 self.addEventListener('install', e => {
