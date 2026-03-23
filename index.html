@@ -951,9 +951,10 @@ body{position:relative;overflow-x:hidden}
       mediaRecorder.onstop = async () => {
         stream.getTracks().forEach(t => t.stop());
         stopVisualizer();
+        const savedImage = capturedBase64;
         stopIslandCam();
-        if (audioChunks.length === 0 && !capturedBase64) { resetMicUI(); return; }
-        await transcribeAndAnalyze();
+        if (audioChunks.length === 0 && !savedImage) { resetMicUI(); return; }
+        await transcribeAndAnalyze(savedImage);
       };
       mediaRecorder.start();
     } catch (err) {
@@ -982,7 +983,7 @@ body{position:relative;overflow-x:hidden}
     voiceIsland.classList.add('hide');
   }
 
-  async function transcribeAndAnalyze() {
+  async function transcribeAndAnalyze(savedBase64) {
     isProcessing = true;
     micBtn.classList.remove('recording');
     micBtn.classList.add('processing');
@@ -990,8 +991,6 @@ body{position:relative;overflow-x:hidden}
     stopIcon.style.display = 'none';
 
     let transcript = '';
-    const savedBase64 = capturedBase64;
-    capturedBase64 = null;
 
     // Step 1: Transcribe audio if we have it
     if (audioChunks.length > 0) {
