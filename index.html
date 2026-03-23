@@ -112,16 +112,6 @@ body{position:relative;overflow-x:hidden}
   box-shadow:0 4px 16px rgba(0,0,0,0.02);
   opacity:1;
 }
-.logs-list.animate .log-card{
-  opacity:0;transform:translateY(10px);
-  animation:fadeInUp 0.4s ease-out forwards;
-}
-.logs-list.animate .log-card:nth-child(1){animation-delay:0s}
-.logs-list.animate .log-card:nth-child(2){animation-delay:0.1s}
-.logs-list.animate .log-card:nth-child(3){animation-delay:0.2s}
-.logs-list.animate .log-card:nth-child(4){animation-delay:0.3s}
-.logs-list.animate .log-card:nth-child(5){animation-delay:0.4s}
-@keyframes fadeInUp{to{opacity:1;transform:translateY(0)}}
 
 .log-left{display:flex;align-items:center;gap:16px;min-width:0}
 .log-icon{width:48px;height:48px;border-radius:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
@@ -401,8 +391,8 @@ body{position:relative;overflow-x:hidden}
 .log-serving{font-size:11px;font-weight:600;color:#10b981;margin-left:4px}
 .log-card{cursor:pointer;touch-action:pan-y;user-select:none;position:relative;z-index:1}
 .log-card:active{transform:scale(0.98)}
-.log-card.swiping{animation:none!important;transition:none!important}
-.log-card.dismissed{animation:none!important;transition:transform 0.3s ease-out,opacity 0.3s ease-out!important}
+.log-card.swiping{transition:none!important}
+.log-card.dismissed{transition:transform 0.3s ease-out,opacity 0.3s ease-out!important}
 .log-card-wrap{position:relative;overflow:hidden;border-radius:24px}
 .log-delete-bg{
   position:absolute;inset:0;border-radius:24px;
@@ -769,7 +759,7 @@ body{position:relative;overflow-x:hidden}
   };
 
   // ── Render ──
-  function render(animate) {
+  function render() {
     const goals = getMacroGoals();
     const totalCal = logs.reduce((s,l) => s + l.calories, 0);
     const totalP = logs.reduce((s,l) => s + l.macros.protein, 0);
@@ -798,7 +788,6 @@ body{position:relative;overflow-x:hidden}
       logsList.innerHTML = '<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg><p>No logs yet</p><p class="empty-hint">Tap the mic to log food by voice</p></div>';
       return;
     }
-    logsList.classList.toggle('animate', !!animate);
     logsList.innerHTML = logs.map(log => `
       <div class="log-card-wrap">
       <div class="log-delete-bg" id="del-bg-${log.id}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>Delete</div>
@@ -833,9 +822,6 @@ body{position:relative;overflow-x:hidden}
       const delBg = $('del-bg-' + card.dataset.id);
       card.addEventListener('touchstart', e => {
         startX = e.touches[0].clientX; currentX = 0; swiping = false;
-        card.style.animation = 'none';
-        card.style.opacity = '1';
-        card.style.transform = 'none';
       }, { passive: true });
       card.addEventListener('touchmove', e => {
         const dx = e.touches[0].clientX - startX;
@@ -886,7 +872,7 @@ body{position:relative;overflow-x:hidden}
   function addLog(log) {
     logs.unshift(log);
     saveLogs();
-    render(true);
+    render();
   }
 
   // ── Audio Visualizer ──
