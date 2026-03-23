@@ -202,25 +202,61 @@ body{position:relative;overflow-x:hidden}
   padding:12px;
   box-shadow:0 24px 48px rgba(0,0,0,0.12);
   border:1px solid rgba(255,255,255,0.8);
-  display:flex;align-items:stretch;gap:12px;
+  display:flex;flex-direction:column;gap:10px;
   pointer-events:auto;
   opacity:0;transform:translateX(-50%) translateY(30px) scale(0.9);
   transition:opacity 0.35s cubic-bezier(0.34,1.56,0.64,1),transform 0.35s cubic-bezier(0.34,1.56,0.64,1);
 }
-.voice-island.show{
-  opacity:1;transform:translateX(-50%) translateY(0) scale(1);
-}
-.voice-island.hide{
-  opacity:0;transform:translateX(-50%) translateY(20px) scale(0.95);
-  pointer-events:none;
-}
+.voice-island.show{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}
+.voice-island.hide{opacity:0;transform:translateX(-50%) translateY(20px) scale(0.95);pointer-events:none}
 
+/* Step indicator */
+.island-step{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#94a3b8;padding:4px 4px 0}
+
+/* ── Scan Mode ── */
+.scan-area{display:flex;gap:10px;align-items:stretch;min-height:96px}
+.scan-preview{
+  flex:1;position:relative;border-radius:16px;overflow:hidden;
+  background:#0f172a;cursor:pointer;display:flex;align-items:center;justify-content:center;
+}
+.scan-preview video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0.7}
+.scan-preview:active{opacity:0.9}
+.scan-hint{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;gap:4px;pointer-events:none;color:#fff}
+.scan-hint svg{width:28px;height:28px;stroke-width:1.5}
+.scan-hint span{font-size:10px;font-weight:600;letter-spacing:0.06em;opacity:0.8}
+.scan-flash{position:absolute;inset:0;background:#fff;z-index:5;opacity:0;pointer-events:none;transition:opacity 0.1s}
+.scan-flash.flash{opacity:0.6}
+
+/* Thumbnails strip */
+.scan-thumbs{display:flex;gap:6px;flex-wrap:wrap}
+.scan-thumb{width:44px;height:44px;border-radius:10px;overflow:hidden;position:relative;flex-shrink:0;border:1px solid rgba(255,255,255,0.5)}
+.scan-thumb img{width:100%;height:100%;object-fit:cover}
+.scan-thumb-remove{
+  position:absolute;top:-4px;right:-4px;width:18px;height:18px;border-radius:50%;
+  background:rgba(244,63,94,0.9);color:#fff;font-size:12px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;
+  border:1px solid #fff;line-height:1;z-index:2;
+}
+.scan-count{font-size:11px;font-weight:600;color:#64748b;display:flex;align-items:center}
+
+/* Done button */
+.scan-done{
+  padding:10px;border:none;border-radius:14px;
+  background:#10b981;color:#fff;font-size:13px;font-weight:600;
+  font-family:inherit;cursor:pointer;width:100%;
+  box-shadow:0 4px 16px rgba(16,185,129,0.2);transition:transform 0.15s;
+}
+.scan-done:active{transform:scale(0.98)}
+.scan-done:disabled{background:#94a3b8;box-shadow:none;cursor:default}
+
+/* ── Voice Mode ── */
+.voice-area{display:flex;gap:10px;align-items:stretch}
 .voice-status{
   flex:1;
   background:rgba(248,250,252,0.5);
   border-radius:16px;
-  padding:16px;
-  display:flex;flex-direction:column;justify-content:center;gap:12px;
+  padding:14px;
+  display:flex;flex-direction:column;justify-content:center;gap:10px;
   border:1px solid rgba(241,245,249,0.5);
 }
 .voice-active-row{display:flex;align-items:center;gap:8px}
@@ -234,35 +270,9 @@ body{position:relative;overflow-x:hidden}
 .voice-waves{display:flex;align-items:center;gap:2px;height:16px;flex-shrink:0;margin-left:8px}
 .voice-wave{width:4px;border-radius:9999px;background:#10b981;height:3px;transition:height 0.08s ease-out}
 
-/* Live Camera Preview in Voice Island */
-.live-cam{
-  width:88px;flex-shrink:0;
-  position:relative;
-  border-radius:16px;overflow:hidden;
-  background:#0f172a;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  color:#fff;cursor:pointer;
-  border:none;
-  transition:transform 0.15s;
-}
-.live-cam:active{transform:scale(0.95)}
-.live-cam video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0.7}
-.live-cam .cam-hint{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;gap:4px;pointer-events:none}
-.live-cam .cam-hint svg{width:24px;height:24px;stroke-width:1.5}
-.live-cam .cam-hint span{font-size:9px;font-weight:700;letter-spacing:0.12em;color:rgba(255,255,255,0.9)}
-.live-cam.captured{border:2px solid #10b981}
-.live-cam.captured::after{
-  content:'';position:absolute;inset:0;z-index:3;
-  background:rgba(16,185,129,0.2);
-}
-.live-cam .cam-check{
-  display:none;position:absolute;inset:0;z-index:4;
-  background:rgba(16,185,129,0.3);
-  align-items:center;justify-content:center;
-}
-.live-cam.captured .cam-check{display:flex}
-.live-cam.captured .cam-hint{display:none}
-.cam-check svg{width:32px;height:32px;stroke-width:2;color:#fff;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3))}
+/* Label thumbs in voice mode */
+.voice-thumbs{display:flex;gap:4px;padding-top:4px}
+.voice-thumbs img{width:32px;height:32px;border-radius:8px;object-fit:cover;border:1px solid rgba(255,255,255,0.5)}
 
 /* ── Toast ── */
 .toast{
@@ -541,33 +551,49 @@ body{position:relative;overflow-x:hidden}
 
     <!-- Voice Island -->
     <div class="voice-island hide" id="voice-island">
-      <div class="voice-status">
-        <div class="voice-active-row">
-          <div class="voice-dot">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
-            <div class="voice-dot-pulse"></div>
+      <!-- Step 1: Scan Labels -->
+      <div id="island-scan">
+        <div class="island-step">Step 1 — Scan labels</div>
+        <div class="scan-area">
+          <div class="scan-preview" id="scan-preview">
+            <video id="island-cam-video" playsinline autoplay muted></video>
+            <div class="scan-hint">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14.5 4h-5L8 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-4l-1.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+              <span>Tap to scan</span>
+            </div>
+            <div class="scan-flash" id="scan-flash"></div>
           </div>
-          <span class="voice-label">Voice Active</span>
         </div>
-        <div class="voice-bottom">
-          <span class="voice-transcript" id="voice-transcript">Listening...</span>
-          <div class="voice-waves" id="voice-waves">
-            <div class="voice-wave"></div>
-            <div class="voice-wave"></div>
-            <div class="voice-wave"></div>
-            <div class="voice-wave"></div>
-            <div class="voice-wave"></div>
+        <div class="scan-thumbs" id="scan-thumbs"></div>
+        <button class="scan-done" id="scan-done">Done → Describe your meal</button>
+      </div>
+
+      <!-- Step 2: Voice Record -->
+      <div id="island-voice" style="display:none">
+        <div class="island-step">Step 2 — Describe what you used</div>
+        <div class="voice-area">
+          <div class="voice-status">
+            <div class="voice-active-row">
+              <div class="voice-dot">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
+                <div class="voice-dot-pulse"></div>
+              </div>
+              <span class="voice-label">Recording</span>
+            </div>
+            <div class="voice-bottom">
+              <span class="voice-transcript" id="voice-transcript">Listening...</span>
+              <div class="voice-waves" id="voice-waves">
+                <div class="voice-wave"></div>
+                <div class="voice-wave"></div>
+                <div class="voice-wave"></div>
+                <div class="voice-wave"></div>
+                <div class="voice-wave"></div>
+              </div>
+            </div>
+            <div class="voice-thumbs" id="voice-thumbs"></div>
           </div>
         </div>
       </div>
-      <button class="live-cam" id="live-cam">
-        <video id="island-cam-video" playsinline autoplay muted></video>
-        <div class="cam-hint">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14.5 4h-5L8 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-4l-1.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
-          <span>TAP</span>
-        </div>
-        <div class="cam-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-      </button>
     </div>
 
     <!-- Left Side -->
@@ -662,7 +688,6 @@ body{position:relative;overflow-x:hidden}
   let animFrameId = null;
   let editingLogId = null;
   let islandCamStream = null;
-  let capturedBase64 = null;
 
   // ── Elements ──
   const $ = id => document.getElementById(id);
@@ -680,8 +705,6 @@ body{position:relative;overflow-x:hidden}
   const stopIcon = $('stop-icon');
   const voiceIsland = $('voice-island');
   const voiceTranscript = $('voice-transcript');
-  const liveCam = $('live-cam');
-  const islandCamVideo = $('island-cam-video');
   const toastEl = $('toast');
   const toastMsg = $('toast-msg');
   const homeView = $('home-view');
@@ -896,20 +919,31 @@ body{position:relative;overflow-x:hidden}
     for (let i = 0; i < waveBars.length; i++) waveBars[i].style.height = '3px';
   }
 
+  // ── Island State ──
+  let islandMode = 'scan'; // 'scan' | 'voice'
+  let scannedLabels = []; // array of base64 strings
+  const islandScan = $('island-scan');
+  const islandVoice = $('island-voice');
+  const scanPreview = $('scan-preview');
+  const islandCamVideo = $('island-cam-video');
+  const scanThumbs = $('scan-thumbs');
+  const voiceThumbs = $('voice-thumbs');
+  const scanFlash = $('scan-flash');
+  const scanDone = $('scan-done');
+
   // ── Island Camera ──
   async function startIslandCam() {
     try {
       islandCamStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
       islandCamVideo.srcObject = islandCamStream;
-    } catch (err) { /* camera optional, ignore */ }
+    } catch (err) { showToast('Camera not available'); }
   }
   function stopIslandCam() {
     if (islandCamStream) { islandCamStream.getTracks().forEach(t => t.stop()); islandCamStream = null; }
     islandCamVideo.srcObject = null;
-    liveCam.classList.remove('captured');
-    capturedBase64 = null;
   }
-  function captureIslandFrame() {
+
+  function captureLabel() {
     if (!islandCamStream) return;
     const video = islandCamVideo;
     const canvas = $('camera-canvas');
@@ -917,30 +951,71 @@ body{position:relative;overflow-x:hidden}
     canvas.width = video.videoWidth * scale;
     canvas.height = video.videoHeight * scale;
     canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-    capturedBase64 = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
-    liveCam.classList.add('captured');
+    const b64 = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
+    scannedLabels.push(b64);
+    // Flash effect
+    scanFlash.classList.add('flash');
+    setTimeout(() => scanFlash.classList.remove('flash'), 150);
+    renderScanThumbs();
   }
-  liveCam.onclick = () => captureIslandFrame();
 
-  // ── Voice Recording (Whisper) ──
+  function renderScanThumbs() {
+    scanThumbs.innerHTML = scannedLabels.map((b64, i) =>
+      `<div class="scan-thumb"><img src="data:image/jpeg;base64,${b64}" alt="Label ${i+1}"><div class="scan-thumb-remove" data-idx="${i}">×</div></div>`
+    ).join('') + (scannedLabels.length ? `<span class="scan-count">${scannedLabels.length} label${scannedLabels.length > 1 ? 's' : ''}</span>` : '');
+    scanThumbs.querySelectorAll('.scan-thumb-remove').forEach(btn => {
+      btn.onclick = e => { e.stopPropagation(); scannedLabels.splice(parseInt(btn.dataset.idx), 1); renderScanThumbs(); };
+    });
+  }
+
+  scanPreview.onclick = () => captureLabel();
+
+  // ── Step transitions ──
+  function showScanMode() {
+    islandMode = 'scan';
+    islandScan.style.display = '';
+    islandVoice.style.display = 'none';
+  }
+  function showVoiceMode() {
+    islandMode = 'voice';
+    islandScan.style.display = 'none';
+    islandVoice.style.display = '';
+    // Show label thumbs in voice mode
+    voiceThumbs.innerHTML = scannedLabels.map(b64 =>
+      `<img src="data:image/jpeg;base64,${b64}" alt="label">`
+    ).join('');
+  }
+
+  scanDone.onclick = async () => {
+    stopIslandCam();
+    showVoiceMode();
+    // Start voice recording
+    await startVoiceRecording();
+  };
+
+  // ── Mic button: opens scan mode ──
   async function startLogging() {
-    if (!settings.openaiKey) { showToast('Set OpenAI API key in Settings'); switchView('settings'); return; }
     if (!settings.anthropicKey) { showToast('Set Anthropic API key in Settings'); switchView('settings'); return; }
+    if (!settings.openaiKey) { showToast('Set OpenAI API key in Settings'); switchView('settings'); return; }
 
+    scannedLabels = [];
+    renderScanThumbs();
+    showScanMode();
+    voiceIsland.classList.remove('hide');
+    voiceIsland.classList.add('show');
+    micBtn.classList.add('recording');
+    micIcon.style.display = 'none';
+    stopIcon.style.display = 'block';
+    isLogging = true;
+    await startIslandCam();
+  }
+
+  async function startVoiceRecording() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      isLogging = true;
       audioChunks = [];
-      capturedBase64 = null;
-      liveCam.classList.remove('captured');
-      micBtn.classList.add('recording');
-      micIcon.style.display = 'none';
-      stopIcon.style.display = 'block';
-      voiceTranscript.textContent = 'Listening...';
-      voiceIsland.classList.remove('hide');
-      voiceIsland.classList.add('show');
+      voiceTranscript.textContent = 'Describe what you used...';
       startVisualizer(stream);
-      startIslandCam();
 
       const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
         ? 'audio/webm;codecs=opus'
@@ -951,10 +1026,8 @@ body{position:relative;overflow-x:hidden}
       mediaRecorder.onstop = async () => {
         stream.getTracks().forEach(t => t.stop());
         stopVisualizer();
-        const savedImage = capturedBase64;
-        stopIslandCam();
-        if (audioChunks.length === 0 && !savedImage) { resetMicUI(); return; }
-        await transcribeAndAnalyze(savedImage);
+        if (audioChunks.length === 0 && scannedLabels.length === 0) { resetMicUI(); return; }
+        await transcribeAndAnalyze();
       };
       mediaRecorder.start();
     } catch (err) {
@@ -966,6 +1039,17 @@ body{position:relative;overflow-x:hidden}
   function stopLogging() {
     if (!isLogging) return;
     isLogging = false;
+    stopIslandCam();
+    if (islandMode === 'scan') {
+      // User stopped during scan mode without recording — skip to voice if they have labels
+      if (scannedLabels.length > 0) {
+        showVoiceMode();
+        startVoiceRecording();
+        isLogging = true;
+        return;
+      }
+      resetMicUI(); return;
+    }
     if (mediaRecorder && mediaRecorder.state === 'recording') {
       mediaRecorder.stop();
     } else {
@@ -981,9 +1065,10 @@ body{position:relative;overflow-x:hidden}
     stopIcon.style.display = 'none';
     voiceIsland.classList.remove('show');
     voiceIsland.classList.add('hide');
+    stopIslandCam();
   }
 
-  async function transcribeAndAnalyze(savedBase64) {
+  async function transcribeAndAnalyze() {
     isProcessing = true;
     micBtn.classList.remove('recording');
     micBtn.classList.add('processing');
@@ -992,7 +1077,6 @@ body{position:relative;overflow-x:hidden}
 
     let transcript = '';
 
-    // Step 1: Transcribe audio if we have it
     if (audioChunks.length > 0) {
       voiceTranscript.textContent = 'Transcribing...';
       try {
@@ -1022,19 +1106,19 @@ body{position:relative;overflow-x:hidden}
       }
     }
 
-    // Step 2: Send transcript + optional image to Claude together
     voiceTranscript.textContent = 'Analyzing...';
-    await analyzeWithClaude(transcript, savedBase64);
+    await analyzeWithClaude(transcript, scannedLabels);
   }
 
   // ── Claude Food Analysis ──
-  async function analyzeWithClaude(text, imageBase64) {
+  async function analyzeWithClaude(text, images) {
     try {
+      const hasImages = images && images.length > 0;
       let context = '';
-      if (text && imageBase64) {
-        context = `The user said: "${text}"\nThey also took a photo of the food or its nutrition label. Use BOTH the voice description and the photo together. The voice may specify quantities (e.g. "100g of this") — apply that to what you see in the image/label.`;
-      } else if (imageBase64) {
-        context = 'The user took a photo of food or a nutrition label. Extract the nutrition info from what you see.';
+      if (text && hasImages) {
+        context = `The user scanned ${images.length} nutrition label(s) from products they used, then described their meal: "${text}"\n\nIMPORTANT: Read the EXACT nutrition values from each label photo. The voice description tells you HOW MUCH of each product was used. Match each label to the description and calculate the actual macros for the amounts consumed.`;
+      } else if (hasImages) {
+        context = `The user scanned ${images.length} nutrition label(s). Read the exact nutrition values from each label and log them.`;
       } else if (text) {
         context = `The user said: "${text}"`;
       }
@@ -1043,22 +1127,23 @@ body{position:relative;overflow-x:hidden}
 
 Break down into INDIVIDUAL food items. Return ONLY a valid JSON array, no markdown.
 
-Format: [{"name":"Item Name","amount_g":NUMBER,"unit":"g|ml","calories":NUMBER,"protein":NUMBER,"carbs":NUMBER,"fat":NUMBER,"icon":"meal|snack|drink","quality":"green|yellow|red"}]
+Format: [{"name":"Product Name","amount_g":NUMBER,"unit":"g|ml","calories":NUMBER,"protein":NUMBER,"carbs":NUMBER,"fat":NUMBER,"icon":"meal|snack|drink","quality":"green|yellow|red"}]
 
 Rules:
 - If NO food is mentioned or visible, return: []
-- "amount_g" = total grams (or ml) consumed
-- "calories/protein/carbs/fat" = TOTAL for the amount consumed (not per 100g)
-- Use USDA nutrition data for accuracy
-- If a nutrition label is visible in the photo, read the exact values from it
-- If the user specifies an amount (e.g. "100g of this"), use that amount
-- For countable items: 1 large egg ≈ 50g, 1 chicken sausage ≈ 85g, etc.
+- READ nutrition labels carefully — extract calories, protein, carbs, fat per serving/per 100g as shown
+- "amount_g" = the amount the user actually consumed (from their voice description, or the serving size on the label)
+- "calories/protein/carbs/fat" = TOTAL macros for the amount consumed
+- If the user says "I used 200g of the pasta", calculate macros for 200g based on the label's per-100g values
+- If no amount specified, use one serving as shown on the label
 - "icon": meal=main food, snack=snacks/fruits, drink=beverages
 - "quality": green=healthy, yellow=moderate, red=junk`;
 
       const content = [];
-      if (imageBase64) {
-        content.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: imageBase64 } });
+      if (hasImages) {
+        images.forEach((b64, i) => {
+          content.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: b64 } });
+        });
       }
       content.push({ type: 'text', text: prompt });
 
