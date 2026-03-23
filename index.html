@@ -231,8 +231,8 @@ body{position:relative;overflow-x:hidden}
 .voice-waves{display:flex;align-items:center;gap:2px;height:16px;flex-shrink:0;margin-left:8px}
 .voice-wave{width:4px;border-radius:9999px;background:#10b981;height:3px;transition:height 0.08s ease-out}
 
-/* Snap Button */
-.snap-btn{
+/* Live Camera Preview in Voice Island */
+.live-cam{
   width:88px;flex-shrink:0;
   position:relative;
   border-radius:16px;overflow:hidden;
@@ -242,14 +242,24 @@ body{position:relative;overflow-x:hidden}
   border:none;
   transition:transform 0.15s;
 }
-.snap-btn:active{transform:scale(0.95)}
-.snap-bg{position:absolute;inset:0;opacity:0.4;background-size:cover;background-position:center;background-image:url('https://images.unsplash.com/photo-1542838132-92c53300491e?w=200&h=200&fit=crop')}
-.snap-overlay{position:absolute;inset:0;background:rgba(0,0,0,0.4);transition:background 0.2s}
-.snap-btn:hover .snap-overlay{background:rgba(0,0,0,0.2)}
-.snap-scanner{position:absolute;left:0;right:0;height:1px;background:#34d399;box-shadow:0 0 12px rgba(16,185,129,1);animation:scanLine 2.5s linear infinite}
-@keyframes scanLine{0%{top:-10%}100%{top:110%}}
-.snap-btn svg{width:24px;height:24px;stroke-width:1.5;position:relative;z-index:2;margin-bottom:6px}
-.snap-label{font-size:9px;font-weight:700;letter-spacing:0.15em;position:relative;z-index:2;color:rgba(255,255,255,0.9)}
+.live-cam:active{transform:scale(0.95)}
+.live-cam video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0.7}
+.live-cam .cam-hint{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;gap:4px;pointer-events:none}
+.live-cam .cam-hint svg{width:24px;height:24px;stroke-width:1.5}
+.live-cam .cam-hint span{font-size:9px;font-weight:700;letter-spacing:0.12em;color:rgba(255,255,255,0.9)}
+.live-cam.captured{border:2px solid #10b981}
+.live-cam.captured::after{
+  content:'';position:absolute;inset:0;z-index:3;
+  background:rgba(16,185,129,0.2);
+}
+.live-cam .cam-check{
+  display:none;position:absolute;inset:0;z-index:4;
+  background:rgba(16,185,129,0.3);
+  align-items:center;justify-content:center;
+}
+.live-cam.captured .cam-check{display:flex}
+.live-cam.captured .cam-hint{display:none}
+.cam-check svg{width:32px;height:32px;stroke-width:2;color:#fff;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3))}
 
 /* ── Toast ── */
 .toast{
@@ -311,47 +321,8 @@ body{position:relative;overflow-x:hidden}
 }
 .settings-danger:active{transform:scale(0.98)}
 
-/* ── Camera Overlay ── */
-.camera-overlay{
-  position:fixed;inset:0;z-index:60;
-  background:#000;display:none;
-  flex-direction:column;align-items:center;justify-content:center;
-}
-.camera-overlay.active{display:flex}
-.camera-overlay video{width:100%;height:100%;object-fit:cover}
-.camera-overlay .camera-controls{
-  position:absolute;bottom:40px;left:0;right:0;
-  display:flex;align-items:center;justify-content:center;gap:24px;
-}
-.camera-capture{
-  width:72px;height:72px;border-radius:50%;
-  border:4px solid #fff;background:rgba(255,255,255,0.3);
-  backdrop-filter:blur(8px);cursor:pointer;transition:transform 0.15s;
-}
-.camera-capture:active{transform:scale(0.9)}
-.camera-cancel{
-  background:rgba(255,255,255,0.15);backdrop-filter:blur(8px);
-  border:1px solid rgba(255,255,255,0.2);border-radius:50%;
-  width:48px;height:48px;display:flex;align-items:center;justify-content:center;
-  color:#fff;cursor:pointer;
-}
-.camera-cancel svg{width:24px;height:24px;stroke-width:1.5}
 
-/* ── Camera hotbar button ── */
-.cam-btn{
-  position:absolute;left:50%;top:-24px;transform:translateX(calc(-50% + 52px));
-  width:44px;height:44px;border-radius:50%;
-  border:1px solid rgba(255,255,255,0.5);
-  background:rgba(255,255,255,0.7);
-  backdrop-filter:blur(16px);
-  color:#64748b;cursor:pointer;
-  display:flex;align-items:center;justify-content:center;
-  box-shadow:0 4px 16px rgba(0,0,0,0.1);
-  transition:all 0.2s;
-}
-.cam-btn:hover{color:#1e293b;transform:translateX(calc(-50% + 52px)) scale(1.05)}
-.cam-btn:active{transform:translateX(calc(-50% + 52px)) scale(0.95)}
-.cam-btn svg{width:20px;height:20px;stroke-width:1.5}
+
 
 /* ── Empty state ── */
 .empty-state{text-align:center;padding:40px 20px;color:#94a3b8}
@@ -586,12 +557,13 @@ body{position:relative;overflow-x:hidden}
           </div>
         </div>
       </div>
-      <button class="snap-btn" id="snap-btn">
-        <div class="snap-bg"></div>
-        <div class="snap-overlay"></div>
-        <div class="snap-scanner"></div>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14.5 4h-5L8 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-4l-1.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
-        <span class="snap-label">SNAP</span>
+      <button class="live-cam" id="live-cam">
+        <video id="island-cam-video" playsinline autoplay muted></video>
+        <div class="cam-hint">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14.5 4h-5L8 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-4l-1.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+          <span>TAP</span>
+        </div>
+        <div class="cam-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
       </button>
     </div>
 
@@ -611,11 +583,6 @@ body{position:relative;overflow-x:hidden}
       <div id="stop-icon" class="stop-icon" style="display:none"></div>
     </button>
 
-    <!-- Camera Button (independent) -->
-    <button class="cam-btn" id="cam-btn">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14.5 4h-5L8 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-4l-1.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
-    </button>
-
     <!-- Right Side -->
     <div class="hotbar-side">
       <button class="hotbar-btn" id="nav-target">
@@ -626,16 +593,6 @@ body{position:relative;overflow-x:hidden}
   </div>
 </div>
 
-<!-- Camera Overlay -->
-<div class="camera-overlay" id="camera-overlay">
-  <video id="camera-video" playsinline autoplay></video>
-  <div class="camera-controls">
-    <button class="camera-cancel" id="camera-cancel">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-    </button>
-    <button class="camera-capture" id="camera-capture"></button>
-  </div>
-</div>
 <canvas id="camera-canvas" style="display:none"></canvas>
 
 <!-- Edit Modal -->
@@ -701,6 +658,8 @@ body{position:relative;overflow-x:hidden}
   let analyserNode = null;
   let animFrameId = null;
   let editingLogId = null;
+  let islandCamStream = null;
+  let capturedBase64 = null;
 
   // ── Elements ──
   const $ = id => document.getElementById(id);
@@ -718,7 +677,8 @@ body{position:relative;overflow-x:hidden}
   const stopIcon = $('stop-icon');
   const voiceIsland = $('voice-island');
   const voiceTranscript = $('voice-transcript');
-  const snapBtn = $('snap-btn');
+  const liveCam = $('live-cam');
+  const islandCamVideo = $('island-cam-video');
   const toastEl = $('toast');
   const toastMsg = $('toast-msg');
   const homeView = $('home-view');
@@ -932,6 +892,32 @@ body{position:relative;overflow-x:hidden}
     for (let i = 0; i < waveBars.length; i++) waveBars[i].style.height = '3px';
   }
 
+  // ── Island Camera ──
+  async function startIslandCam() {
+    try {
+      islandCamStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      islandCamVideo.srcObject = islandCamStream;
+    } catch (err) { /* camera optional, ignore */ }
+  }
+  function stopIslandCam() {
+    if (islandCamStream) { islandCamStream.getTracks().forEach(t => t.stop()); islandCamStream = null; }
+    islandCamVideo.srcObject = null;
+    liveCam.classList.remove('captured');
+    capturedBase64 = null;
+  }
+  function captureIslandFrame() {
+    if (!islandCamStream) return;
+    const video = islandCamVideo;
+    const canvas = $('camera-canvas');
+    const scale = Math.min(1024 / Math.max(video.videoWidth, video.videoHeight), 1);
+    canvas.width = video.videoWidth * scale;
+    canvas.height = video.videoHeight * scale;
+    canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+    capturedBase64 = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
+    liveCam.classList.add('captured');
+  }
+  liveCam.onclick = () => captureIslandFrame();
+
   // ── Voice Recording (Whisper) ──
   async function startLogging() {
     if (!settings.openaiKey) { showToast('Set OpenAI API key in Settings'); switchView('settings'); return; }
@@ -941,6 +927,8 @@ body{position:relative;overflow-x:hidden}
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       isLogging = true;
       audioChunks = [];
+      capturedBase64 = null;
+      liveCam.classList.remove('captured');
       micBtn.classList.add('recording');
       micIcon.style.display = 'none';
       stopIcon.style.display = 'block';
@@ -948,6 +936,7 @@ body{position:relative;overflow-x:hidden}
       voiceIsland.classList.remove('hide');
       voiceIsland.classList.add('show');
       startVisualizer(stream);
+      startIslandCam();
 
       const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
         ? 'audio/webm;codecs=opus'
@@ -958,7 +947,8 @@ body{position:relative;overflow-x:hidden}
       mediaRecorder.onstop = async () => {
         stream.getTracks().forEach(t => t.stop());
         stopVisualizer();
-        if (audioChunks.length === 0) { resetMicUI(); return; }
+        stopIslandCam();
+        if (audioChunks.length === 0 && !capturedBase64) { resetMicUI(); return; }
         await transcribeAndAnalyze();
       };
       mediaRecorder.start();
@@ -994,41 +984,57 @@ body{position:relative;overflow-x:hidden}
     micBtn.classList.add('processing');
     micIcon.style.display = 'block';
     stopIcon.style.display = 'none';
-    voiceTranscript.textContent = 'Transcribing...';
 
-    try {
-      const ext = audioChunks[0].type.includes('mp4') ? 'mp4' : 'webm';
-      const blob = new Blob(audioChunks, { type: audioChunks[0].type });
-      const formData = new FormData();
-      formData.append('file', blob, `audio.${ext}`);
-      formData.append('model', 'whisper-1');
+    let transcript = '';
+    const savedBase64 = capturedBase64;
+    capturedBase64 = null;
 
-      const res = await fetch('https://api.openai.com/v1/audio/transcriptions', {
-        method: 'POST',
-        headers: { 'Authorization': 'Bearer ' + settings.openaiKey },
-        body: formData
-      });
+    // Step 1: Transcribe audio if we have it
+    if (audioChunks.length > 0) {
+      voiceTranscript.textContent = 'Transcribing...';
+      try {
+        const ext = audioChunks[0].type.includes('mp4') ? 'mp4' : 'webm';
+        const blob = new Blob(audioChunks, { type: audioChunks[0].type });
+        const formData = new FormData();
+        formData.append('file', blob, `audio.${ext}`);
+        formData.append('model', 'whisper-1');
 
-      if (!res.ok) {
-        const errText = res.status === 401 ? 'Invalid OpenAI API key' : `Whisper error (${res.status})`;
-        showToast(errText); resetMicUI(); return;
+        const res = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + settings.openaiKey },
+          body: formData
+        });
+
+        if (!res.ok) {
+          const errText = res.status === 401 ? 'Invalid OpenAI API key' : `Whisper error (${res.status})`;
+          showToast(errText); resetMicUI(); return;
+        }
+
+        const data = await res.json();
+        transcript = data.text;
+        voiceTranscript.textContent = transcript;
+      } catch (err) {
+        showToast('Network error — try again');
+        resetMicUI(); return;
       }
-
-      const data = await res.json();
-      const transcript = data.text;
-      voiceTranscript.textContent = transcript;
-
-      await analyzeWithClaude(transcript);
-    } catch (err) {
-      showToast('Network error — try again');
-      resetMicUI();
     }
+
+    // Step 2: Send transcript + optional image to Claude together
+    voiceTranscript.textContent = 'Analyzing...';
+    await analyzeWithClaude(transcript, savedBase64);
   }
 
   // ── Claude Food Analysis ──
-  async function analyzeWithClaude(text) {
-    voiceTranscript.textContent = 'Analyzing...';
+  async function analyzeWithClaude(text, imageBase64) {
     try {
+      const prompt = `Break down this food into INDIVIDUAL ingredients with USDA nutrition data. Return ONLY a valid JSON array, no markdown fences.\n\nFormat: [{"name":"Ingredient Name","amount_g":NUMBER,"unit":"g|ml","calories_per_100":NUMBER,"protein_per_100":NUMBER,"carbs_per_100":NUMBER,"fat_per_100":NUMBER,"icon":"meal|snack|drink","quality":"green|yellow|red"}]\n\nRules:\n- If no food or drink is mentioned/visible, return an empty array: []\n- Each ingredient is a separate item in the array\n- "amount_g" is the total amount in grams (or ml for liquids) the person consumed\n- All nutrition values are PER 100g (or 100ml) based on USDA FoodData Central\n- "unit" is "g" for solids, "ml" for liquids\n- For countable items: use standard USDA weight (e.g. 1 large egg = 50g, so 3 eggs = 150g)\n- Quality: green=healthy/whole foods, yellow=moderate, red=junk/high-sugar\n- Icon: meal=main meals/proteins, snack=snacks/fruits/bars, drink=beverages\n${text ? `\nVoice transcript: "${text}"` : ''}${imageBase64 ? '\nA photo of the food/label is also attached. Use both the voice description and the image to extract nutrition info. If a nutrition label is visible, prioritize the label data.' : ''}`;
+
+      const content = [];
+      if (imageBase64) {
+        content.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: imageBase64 } });
+      }
+      content.push({ type: 'text', text: prompt });
+
       const res = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {
@@ -1040,7 +1046,7 @@ body{position:relative;overflow-x:hidden}
         body: JSON.stringify({
           model: 'claude-sonnet-4-20250514',
           max_tokens: 1024,
-          messages: [{ role: 'user', content: `Break down this food log entry into INDIVIDUAL ingredients with USDA nutrition data. Return ONLY a valid JSON array, no markdown fences.\n\nFormat: [{"name":"Ingredient Name","amount_g":NUMBER,"unit":"g|ml","calories_per_100":NUMBER,"protein_per_100":NUMBER,"carbs_per_100":NUMBER,"fat_per_100":NUMBER,"icon":"meal|snack|drink","quality":"green|yellow|red"}]\n\nRules:\n- If the text does NOT mention any food or drink, return an empty array: []\n- Each ingredient is a separate item in the array\n- "amount_g" is the total amount in grams (or ml for liquids) the person consumed\n- All nutrition values are PER 100g (or 100ml) based on USDA FoodData Central\n- "unit" is "g" for solids, "ml" for liquids\n- For countable items: use standard USDA weight (e.g. 1 large egg = 50g, so 3 eggs = 150g)\n- Quality: green=healthy/whole foods, yellow=moderate, red=junk/high-sugar\n- Icon: meal=main meals/proteins, snack=snacks/fruits/bars, drink=beverages\n\nEntry: "${text}"` }]
+          messages: [{ role: 'user', content }]
         })
       });
 
@@ -1166,110 +1172,6 @@ body{position:relative;overflow-x:hidden}
     saveLogs(); render(); closeEditModal();
     showToast('Entry deleted');
   };
-
-  // ── Camera / Label Scanning ──
-  const cameraOverlay = $('camera-overlay');
-  const cameraVideo = $('camera-video');
-  const cameraCanvas = $('camera-canvas');
-  let cameraStream = null;
-
-  async function openCamera() {
-    if (!settings.anthropicKey) { showToast('Set Anthropic API key in Settings'); switchView('settings'); return; }
-    try {
-      cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-      cameraVideo.srcObject = cameraStream;
-      cameraOverlay.classList.add('active');
-    } catch (err) {
-      showToast('Camera access denied');
-    }
-  }
-
-  function closeCamera() {
-    if (cameraStream) { cameraStream.getTracks().forEach(t => t.stop()); cameraStream = null; }
-    cameraVideo.srcObject = null;
-    cameraOverlay.classList.remove('active');
-  }
-
-  async function captureAndAnalyze() {
-    const video = cameraVideo;
-    const canvas = cameraCanvas;
-    // Scale down to max 1024px
-    const scale = Math.min(1024 / Math.max(video.videoWidth, video.videoHeight), 1);
-    canvas.width = video.videoWidth * scale;
-    canvas.height = video.videoHeight * scale;
-    canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-    const base64 = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
-    closeCamera();
-    showToast('Scanning label...');
-
-    try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': settings.anthropicKey,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true'
-        },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 300,
-          messages: [{ role: 'user', content: [
-            { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: base64 } },
-            { type: 'text', text: 'Extract nutrition info from this food or nutrition label. Break into individual ingredients if multiple items visible. Use USDA FoodData Central values. Return ONLY a valid JSON array, no markdown fences.\n\nFormat: [{"name":"Food Name","amount_g":NUMBER,"unit":"g|ml","calories_per_100":NUMBER,"protein_per_100":NUMBER,"carbs_per_100":NUMBER,"fat_per_100":NUMBER,"icon":"meal|snack|drink","quality":"green|yellow|red"}]\n\nAll nutrition values are PER 100g/100ml. "amount_g" is total grams/ml consumed. If a nutrition label shows serving size, convert to grams. If no label visible, estimate from the food shown.' }
-          ] }]
-        })
-      });
-
-      if (!res.ok) {
-        showToast(res.status === 401 ? 'Invalid Anthropic API key' : `Vision error (${res.status})`);
-        return;
-      }
-
-      const data = await res.json();
-      let raw = data.content[0].text.replace(/```json?\s*/g, '').replace(/```\s*/g, '').trim();
-      const items = JSON.parse(raw);
-      const arr = Array.isArray(items) ? items : [items];
-      const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-      const filtered = arr.filter(item => item.name && item.calories_per_100 > 0);
-      if (filtered.length === 0) { showToast('Could not read label'); return; }
-
-      filtered.forEach((item, i) => {
-        const amt = item.amount_g || 100;
-        const factor = amt / 100;
-        addLog({
-          id: (Date.now() + i).toString(),
-          name: item.name,
-          amount: amt,
-          unit: item.unit || 'g',
-          calPer100: item.calories_per_100 || 0,
-          proteinPer100: item.protein_per_100 || 0,
-          carbsPer100: item.carbs_per_100 || 0,
-          fatPer100: item.fat_per_100 || 0,
-          calories: Math.round((item.calories_per_100 || 0) * factor),
-          time: timeStr,
-          icon: ['meal','snack','drink'].includes(item.icon) ? item.icon : 'snack',
-          macros: {
-            protein: Math.round((item.protein_per_100 || 0) * factor),
-            carbs: Math.round((item.carbs_per_100 || 0) * factor),
-            fat: Math.round((item.fat_per_100 || 0) * factor)
-          },
-          quality: ['green','yellow','red'].includes(item.quality) ? item.quality : 'yellow'
-        });
-      });
-      showToast(`Added ${filtered.length} item${filtered.length > 1 ? 's' : ''}`);
-    } catch (err) {
-      console.error('Vision parse error:', err);
-      showToast('Could not parse label');
-    }
-  }
-
-  // Camera buttons
-  $('cam-btn').onclick = () => openCamera();
-  snapBtn.addEventListener('click', () => { stopLogging(); openCamera(); });
-  $('camera-capture').onclick = () => captureAndAnalyze();
-  $('camera-cancel').onclick = () => closeCamera();
 
   // ── Init ──
   render();
